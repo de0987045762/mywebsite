@@ -1,0 +1,4314 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戰報系統 - 登入</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- 登入頁面 -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">📊 戰報系統</h1>
+                <h2 class="text-2xl font-bold text-gray-700">系統登入</h2>
+                <p class="text-gray-600 mt-2">請輸入您的帳號密碼</p>
+            </div>
+            
+            <form class="mt-8 space-y-6" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+                        <input id="email" name="email" type="email" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="請輸入電子郵件">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+                        <input id="password" name="password" type="password" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                               placeholder="請輸入密碼">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-700">
+                            記住我
+                        </label>
+                    </div>
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-blue-600 hover:text-blue-500" 
+                           onclick="showResetPasswordModal()">
+                            忘記密碼？
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" 
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        登入系統
+                    </button>
+                </div>
+            </form>
+
+            <div class="text-center">
+                <p class="text-sm text-gray-600">
+                    還沒有帳號？ 
+                    <a href="#" onclick="showRegisterModal()" class="font-medium text-blue-600 hover:text-blue-500">
+                        立即註冊
+                    </a>
+                </p>
+            </div>
+
+            <!-- 快速登入測試帳號 -->
+            <div class="border-t pt-4">
+                <p class="text-xs text-gray-500 text-center mb-2">測試帳號快速登入</p>
+                <div class="flex space-x-2">
+                    <button onclick="quickLogin('admin')" class="flex-1 py-1 px-2 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200">
+                        管理員
+                    </button>
+                    <button onclick="quickLogin('staff')" class="flex-1 py-1 px-2 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                        員工
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 註冊模態框 -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">註冊新帳號</h3>
+                <button onclick="hideRegisterModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">姓名</label>
+                    <input type="text" id="regName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+                    <input type="email" id="regEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">密碼</label>
+                    <input type="password" id="regPassword" required minlength="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">權限</label>
+                    <select id="regRole" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="staff">員工</option>
+                        <option value="admin">管理員</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="hideRegisterModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                        取消
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        註冊
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 重設密碼模態框 -->
+    <div id="resetPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">重設密碼</h3>
+                <button onclick="hideResetPasswordModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            
+            <form onsubmit="handleResetPassword(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">電子郵件</label>
+                    <input type="email" id="resetEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="hideResetPasswordModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                        取消
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        發送重設連結
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 戰報系統主頁面 -->
+    <div id="mainSystem" class="hidden">
+        <div class="container mx-auto px-4 py-8">
+            <!-- 頂部導航 -->
+            <header class="flex justify-between items-center mb-8 bg-white rounded-lg shadow-md p-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">🍽️ 帝壹飲食-有間客讚</h1>
+                    <p class="text-gray-600">戰報系統管理平台</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <span id="currentUserLevel" class="text-2xl"></span>
+                        <span class="text-sm text-gray-600">歡迎，<span id="currentUserName" class="font-semibold"></span></span>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">
+                        登出
+                    </button>
+                </div>
+            </header>
+
+            <!-- 公告區 -->
+            <div id="announcementSection" class="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">📢 重要公告</h2>
+                    <button onclick="showAnnouncementModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+                        新增公告
+                    </button>
+                </div>
+                <div id="announcementList" class="space-y-3">
+                    <!-- 公告內容將在這裡顯示 -->
+                </div>
+            </div>
+
+            <!-- 主要功能按鈕 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <button onclick="showModal('createReportModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105">
+                    ➕ 新增戰報
+                </button>
+                <button onclick="showMenuEditModal()" class="bg-violet-500 hover:bg-violet-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105">
+                    🍽️ 菜單管理
+                </button>
+                <button onclick="showStaffManageModal()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all">
+                    👥 人員管理
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+                <button onclick="showLocationManageModal()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all">
+                    📍 據點管理
+                </button>
+                <button onclick="showLeaveModal()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all">
+                    📝 請假管理
+                </button>
+                <button onclick="showScheduleModal()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all">
+                    📅 班表管理
+                </button>
+            </div>
+
+            <!-- 資料管理按鈕 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <button onclick="showHistoryModal()" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all">
+                    📋 歷史紀錄
+                </button>
+                <button onclick="exportData()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all">
+                    📤 匯出資料
+                </button>
+            </div>
+
+            <div id="reportsContainer" class="space-y-4"></div>
+        </div>
+
+        <!-- 新增戰報模態框 -->
+        <div id="createReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">新增戰報</h2>
+                    <button onclick="hideModal('createReportModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                
+                <form onsubmit="submitReport(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">日期</label>
+                            <input type="date" id="reportDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">據點</label>
+                            <select id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required onchange="loadMenuItems(getCurrentMenuDay())">
+                                <option value="">請選擇據點</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">填寫人</label>
+                            <select id="staff" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">請選擇填寫人</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">營業狀況</label>
+                        <select id="salesStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">請選擇狀況</option>
+                            <option value="正常營業">正常營業</option>
+                            <option value="提早結束">提早結束</option>
+                            <option value="延後開始">延後開始</option>
+                            <option value="暫停營業">暫停營業</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">📅 菜單選擇</h3>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <button type="button" class="menu-day-btn bg-gray-500 text-white px-3 py-1 rounded text-sm" data-day="monday" onclick="loadMenuItems('monday')">週一</button>
+                            <button type="button" class="menu-day-btn bg-gray-500 text-white px-3 py-1 rounded text-sm" data-day="tuesday" onclick="loadMenuItems('tuesday')">週二</button>
+                            <button type="button" class="menu-day-btn bg-gray-500 text-white px-3 py-1 rounded text-sm" data-day="wednesday" onclick="loadMenuItems('wednesday')">週三</button>
+                            <button type="button" class="menu-day-btn bg-gray-500 text-white px-3 py-1 rounded text-sm" data-day="thursday" onclick="loadMenuItems('thursday')">週四</button>
+                            <button type="button" class="menu-day-btn bg-gray-500 text-white px-3 py-1 rounded text-sm" data-day="friday" onclick="loadMenuItems('friday')">週五</button>
+                        </div>
+                        <div id="salesItems" class="space-y-3"></div>
+                        
+                        <!-- 餐點臨時增減數量 -->
+                        <div class="mt-6 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg shadow-sm">
+                            <h4 class="text-lg font-bold mb-4 text-blue-800 flex items-center">
+                                📝 餐點臨時增減數量 
+                                <span class="ml-2 text-sm font-normal text-blue-600">(僅記錄用)</span>
+                            </h4>
+                            <div class="bg-blue-100 p-3 rounded-md mb-4">
+                                <p class="text-sm text-blue-700">💡 用於記錄營業中臨時調整的餐點數量，如加菜、減菜等情況</p>
+                            </div>
+                            <div id="tempAdjustments" class="space-y-3">
+                                <div class="bg-white p-3 rounded-lg border border-blue-200 shadow-sm">
+                                    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">餐點名稱</label>
+                                            <input type="text" placeholder="請輸入餐點名稱" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">增減數量</label>
+                                            <input type="number" placeholder="+5 或 -3" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">據點</label>
+                                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 location-select-temp">
+                                                <option value="">選擇據點</option>
+                                                <option value="基湖棧">基湖棧</option>
+                                                <option value="瑞光棧">瑞光棧</option>
+                                                <option value="內湖棧">內湖棧</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">時間</label>
+                                            <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                                            <input type="text" placeholder="原因說明" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <button type="button" onclick="addTempAdjustment()" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                                ➕ 新增
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4 text-blue-800">💳 折扣卡片統計</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">紙本集點卡使用張數</label>
+                                <input type="number" id="paperCards" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" min="0" value="0" onchange="calculateTotal()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">數位集點卡使用張數</label>
+                                <input type="number" id="digitalCards" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" min="0" value="0" onchange="calculateTotal()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4 text-green-800">💰 收款統計</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">電子支付金額</label>
+                                <input type="number" id="electronicPayment" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" min="0" step="0.01" value="0" onchange="calculateTotal()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">現金收款</label>
+                                <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 flex items-center justify-center font-semibold text-green-600">
+                                    $<span id="cashTotal">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-white rounded border">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                <div>銷售小計: $<span id="salesSubtotal">0</span></div>
+                                <div>折扣金額: $<span id="discountAmount">0</span></div>
+                                <div>電子支付: $<span id="electronicTotal">0</span></div>
+                                <div class="font-bold text-green-600">實收總計: $<span id="finalTotalDisplay">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 備品進貨需求清單 -->
+                    <div class="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4 text-orange-800">📦 備品進貨需求清單</h3>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">選擇備品項目</label>
+                            <select id="supplySelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">請選擇備品項目</option>
+                                <option value="bag_half">單色提袋 - 半斤包</option>
+                                <option value="bag_1kg">單色提袋 - 1斤包</option>
+                                <option value="bag_2kg">單色提袋 - 2斤包</option>
+                                <option value="bag_3kg">單色提袋 - 3斤包</option>
+                                <option value="chopsticks">筷子 (包)</option>
+                                <option value="spoons">免洗湯匙 (包)</option>
+                                <option value="soup_cups">320湯杯 (箱)</option>
+                                <option value="soup_lids">320湯杯蓋 (箱)</option>
+                                <option value="point_cards">集點卡 (張)</option>
+                                <option value="alcohol_wipes">酒精擦 (包)</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mb-4">
+                            <input type="number" id="supplyQuantity" placeholder="數量" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="button" onclick="addSupplyItem()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md">新增</button>
+                        </div>
+                        <div id="selectedSupplies" class="space-y-2 mb-4">
+                            <!-- 已選擇的備品項目將顯示在這裡 -->
+                        </div>
+                        <div class="p-3 bg-white rounded border">
+                            <label class="text-sm font-medium block mb-2">備品需求備註</label>
+                            <textarea id="supplyNotes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2" placeholder="請填寫備品相關的特殊需求或說明..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 建議與反饋區塊 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border-2 border-blue-300 shadow-sm">
+                        <h3 class="text-lg font-bold mb-4 text-blue-800">💬 建議與反饋</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">客戶建議與反饋</label>
+                                <textarea id="customerFeedback" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="請記錄客戶的建議、意見或反饋..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">我的建議與反應狀況</label>
+                                <div class="bg-blue-100 p-2 rounded-md mb-2">
+                                    <p class="text-xs text-blue-700">💡 請分享關於今日銷售狀況任何的大小事</p>
+                                </div>
+                                <textarea id="myResponse" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="請記錄您對客戶反饋的處理方式或改善建議..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">其他備註</label>
+                        <textarea id="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="請填寫其他備註事項..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="hideModal('createReportModal')" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-md">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md">
+                            儲存戰報
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 菜單編輯模態框 -->
+        <div id="menuEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div id="menuEditContent">
+                    <!-- 菜單編輯內容將在這裡顯示 -->
+                </div>
+            </div>
+        </div>
+
+        <div id="staffManageModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div id="staffManageContent"></div>
+            </div>
+        </div>
+
+        <div id="locationManageModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div id="locationManageContent"></div>
+            </div>
+        </div>
+
+        <!-- 請假管理模態框 -->
+        <div id="leaveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div id="leaveContent"></div>
+            </div>
+        </div>
+
+        <!-- 班表管理模態框 -->
+        <div id="scheduleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between mb-4">
+                    <h2 class="text-xl font-bold">📅 班表管理</h2>
+                    <button onclick="hideModal('scheduleModal')" class="text-2xl">&times;</button>
+                </div>
+
+                <!-- 班表控制項 -->
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex space-x-4 items-center">
+                        <input type="month" id="scheduleMonth" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="loadSchedule()">
+                        <div class="text-sm text-gray-600">
+                            <span class="inline-block w-3 h-3 bg-green-200 rounded mr-1"></span>已安排
+                            <span class="inline-block w-3 h-3 bg-gray-200 rounded mr-1 ml-3"></span>未安排
+                        </div>
+                    </div>
+                    <div class="flex space-x-2" id="scheduleAdminButtons">
+                        <button onclick="exportSchedule()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
+                            匯出班表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 班表日曆顯示 -->
+                <div id="scheduleCalendar" class="bg-white rounded-lg border">
+                    <!-- 日曆內容將在這裡顯示 -->
+                </div>
+
+                <!-- 批次管理工具 -->
+                <div id="batchManageTools" class="mt-6 p-4 bg-gray-50 rounded-lg admin-only" style="display: none;">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-700">📋 批次管理工具</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button onclick="showBatchAddModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
+                            批次新增班表
+                        </button>
+                        <button onclick="showBatchEditModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+                            批次調整班表
+                        </button>
+                        <button onclick="showBatchDeleteModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm">
+                            批次刪除班表
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- 單日調整表單 -->
+        <div id="scheduleFormModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+                <div class="flex justify-between mb-4">
+                    <h3 class="text-lg font-bold">調整班表</h3>
+                    <button onclick="hideModal('scheduleFormModal')" class="text-2xl">&times;</button>
+                </div>
+
+                <form id="scheduleForm" onsubmit="handleScheduleSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="scheduleDate">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">據點</label>
+                        <select id="scheduleLocation" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- 動態載入據點 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">負責人員</label>
+                        <select id="scheduleStaff" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- 動態載入員工 -->
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" onclick="hideModal('scheduleFormModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                            儲存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 批次新增班表模態框 -->
+        <div id="batchAddModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between mb-4">
+                    <h3 class="text-lg font-bold">批次新增班表</h3>
+                    <button onclick="hideModal('batchAddModal')" class="text-2xl">&times;</button>
+                </div>
+
+                <form id="batchAddForm" onsubmit="handleBatchAdd(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">開始日期</label>
+                            <input type="date" id="batchAddStartDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">結束日期</label>
+                            <input type="date" id="batchAddEndDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">選擇工作日</label>
+                        <div class="flex space-x-2">
+                            <label class="flex items-center"><input type="checkbox" value="1" class="workday-checkbox mr-1"> 週一</label>
+                            <label class="flex items-center"><input type="checkbox" value="2" class="workday-checkbox mr-1"> 週二</label>
+                            <label class="flex items-center"><input type="checkbox" value="3" class="workday-checkbox mr-1"> 週三</label>
+                            <label class="flex items-center"><input type="checkbox" value="4" class="workday-checkbox mr-1"> 週四</label>
+                            <label class="flex items-center"><input type="checkbox" value="5" class="workday-checkbox mr-1"> 週五</label>
+                            <label class="flex items-center"><input type="checkbox" value="6" class="workday-checkbox mr-1"> 週六</label>
+                            <label class="flex items-center"><input type="checkbox" value="0" class="workday-checkbox mr-1"> 週日</label>
+                        </div>
+                    </div>
+
+                    <div id="batchAddPairs" class="space-y-4">
+                        <div class="flex space-x-2">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-1">據點</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 location-select" required>
+                                    <!-- 動態載入據點 -->
+                                </select>
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-1">負責人員</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 staff-select" required>
+                                    <!-- 動態載入員工 -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="addBatchPair()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md w-full">
+                        新增據點配對
+                    </button>
+
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button type="button" onclick="hideModal('batchAddModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                            批次新增
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 批次調整班表模態框 -->
+        <div id="batchEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between mb-4">
+                    <h3 class="text-lg font-bold">批次調整班表</h3>
+                    <button onclick="hideModal('batchEditModal')" class="text-2xl">&times;</button>
+                </div>
+
+                <form id="batchEditForm" onsubmit="handleBatchEdit(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">開始日期</label>
+                            <input type="date" id="batchEditStartDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">結束日期</label>
+                            <input type="date" id="batchEditEndDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">原據點 (要替換的)</label>
+                            <select id="batchEditOldLocation" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">請選擇原據點</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">新據點</label>
+                            <select id="batchEditNewLocation" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">請選擇新據點</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">原負責人 (要替換的)</label>
+                            <select id="batchEditOldStaff" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">不限制 (所有人員)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">新負責人</label>
+                            <select id="batchEditNewStaff" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">請選擇新負責人</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button type="button" onclick="hideModal('batchEditModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                            批次調整
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 批次刪除班表模態框 -->
+        <div id="batchDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+                <div class="flex justify-between mb-4">
+                    <h3 class="text-lg font-bold">批次刪除班表</h3>
+                    <button onclick="hideModal('batchDeleteModal')" class="text-2xl">&times;</button>
+                </div>
+
+                <form id="batchDeleteForm" onsubmit="handleBatchDelete(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">開始日期</label>
+                            <input type="date" id="batchDeleteStartDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">結束日期</label>
+                            <input type="date" id="batchDeleteEndDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">據點 (可選)</label>
+                        <select id="batchDeleteLocation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">所有據點</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">負責人 (可選)</label>
+                        <select id="batchDeleteStaff" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">所有人員</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-red-50 border border-red-200 rounded p-3">
+                        <p class="text-red-700 text-sm">⚠️ 警告：此操作將永久刪除選定範圍內的班表，無法復原！</p>
+                    </div>
+
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button type="button" onclick="hideModal('batchDeleteModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md">
+                            確定刪除
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 公告管理模態框 -->
+        <div id="announcementModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">📢 新增公告</h2>
+                    <button onclick="hideModal('announcementModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                
+                <form onsubmit="submitAnnouncement(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">公告類型</label>
+                        <select id="announcementType" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">請選擇公告類型</option>
+                            <option value="important">🚨 重要公告</option>
+                            <option value="adjustment">⚙️ 作業調整</option>
+                            <option value="sharing">😊 分享趣事</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">公告標題</label>
+                        <input type="text" id="announcementTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請輸入公告標題">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">公告內容</label>
+                        <textarea id="announcementContent" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請輸入公告內容"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">上傳圖片 (可選)</label>
+                        <input type="file" id="announcementImage" accept="image/jpeg,image/jpg,image/png" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">支援 JPEG、JPG、PNG 格式</p>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="hideModal('announcementModal')" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-md">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md">
+                            發布公告
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Firebase 配置
+const firebaseConfig = {
+  apiKey: "AIzaSyCbdLwToNUBbZPZw6nxoxNcRvvqRzlsPvA",
+  authDomain: "de19508098.firebaseapp.com",
+  projectId: "de19508098",
+  storageBucket: "de19508098.firebasestorage.app",
+  messagingSenderId: "441809912913",
+  appId: "1:441809912913:web:ba4b5f97b21bdd5abb6470",
+  measurementId: "G-CVDTLXMWGF"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// 啟用離線持久化
+db.enablePersistence().catch((err) => {
+  if (err.code == 'failed-precondition') {
+    console.log('多個分頁開啟，離線功能無法啟用');
+  } else if (err.code == 'unimplemented') {
+    console.log('瀏覽器不支援離線功能');
+  }
+});
+
+// 全域變數
+let currentUser = null;
+let reports = [];
+let staffList = [];
+let locations = [];
+let menuData = {};
+let announcements = [];
+
+// 測試帳號資料
+const testAccounts = {
+  admin: { email: 'admin@test.com', password: 'admin123', name: '系統管理員', role: 'admin' },
+  staff: { email: 'staff@test.com', password: 'staff123', name: '測試員工', role: 'staff' }
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  // 監聽認證狀態變化
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      currentUser = user;
+      showMainSystem();
+      loadAllData();
+    } else {
+      currentUser = null;
+      showLoginPage();
+    }
+  });
+});
+
+// 顯示登入頁面
+function showLoginPage() {
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('mainSystem').classList.add('hidden');
+}
+
+// 顯示主系統
+async function showMainSystem() {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('mainSystem').classList.remove('hidden');
+  
+  if (currentUser) {
+    document.getElementById('currentUserName').textContent = currentUser.displayName || currentUser.email;
+    
+    // 載入用戶等級資訊
+    try {
+      const userDoc = await db.collection('users').where('email', '==', currentUser.email).get();
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        const levelIcons = {
+          bronze: '🥉',
+          silver: '🥈', 
+          gold: '🥇'
+        };
+        document.getElementById('currentUserLevel').textContent = levelIcons[userData.level] || '🥉';
+      }
+    } catch (error) {
+      console.log('載入用戶等級失敗:', error);
+    }
+  }
+}
+
+// 登入處理
+async function handleLogin(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  
+  try {
+    Swal.fire({
+      title: '登入中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    await auth.signInWithEmailAndPassword(email, password);
+    
+    Swal.fire({
+      title: '登入成功！',
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false
+    });
+    
+  } catch (error) {
+    console.error('登入失敗:', error);
+    Swal.fire({
+      title: '登入失敗',
+      text: getErrorMessage(error.code),
+      icon: 'error'
+    });
+  }
+}
+
+// 快速登入測試帳號
+async function quickLogin(type) {
+  const account = testAccounts[type];
+  
+  try {
+    Swal.fire({
+      title: '登入中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    // 嘗試登入，如果帳號不存在則創建
+    try {
+      await auth.signInWithEmailAndPassword(account.email, account.password);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        // 創建測試帳號
+        const userCredential = await auth.createUserWithEmailAndPassword(account.email, account.password);
+        await userCredential.user.updateProfile({ displayName: account.name });
+        
+        // 在 Firestore 中創建用戶資料
+        await db.collection('users').doc(userCredential.user.uid).set({
+          name: account.name,
+          email: account.email,
+          role: account.role,
+          createdAt: new Date()
+        });
+      } else {
+        throw error;
+      }
+    }
+    
+    Swal.fire({
+      title: '登入成功！',
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false
+    });
+    
+  } catch (error) {
+    console.error('快速登入失敗:', error);
+    Swal.fire({
+      title: '登入失敗',
+      text: getErrorMessage(error.code),
+      icon: 'error'
+    });
+  }
+}
+
+// 註冊處理
+async function handleRegister(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('regName').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const role = document.getElementById('regRole').value;
+  
+  try {
+    Swal.fire({
+      title: '註冊中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    await userCredential.user.updateProfile({ displayName: name });
+    
+    // 在 Firestore 中創建用戶資料
+    await db.collection('users').doc(userCredential.user.uid).set({
+      name,
+      email,
+      role,
+      createdAt: new Date()
+    });
+    
+    Swal.fire({
+      title: '註冊成功！',
+      text: '帳號已創建，正在登入...',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    hideRegisterModal();
+    
+  } catch (error) {
+    console.error('註冊失敗:', error);
+    Swal.fire({
+      title: '註冊失敗',
+      text: getErrorMessage(error.code),
+      icon: 'error'
+    });
+  }
+}
+
+// 重設密碼處理
+async function handleResetPassword(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('resetEmail').value;
+  
+  try {
+    await auth.sendPasswordResetEmail(email);
+    
+    Swal.fire({
+      title: '重設連結已發送',
+      text: '請檢查您的電子郵件',
+      icon: 'success'
+    });
+    
+    hideResetPasswordModal();
+    
+  } catch (error) {
+    console.error('重設密碼失敗:', error);
+    Swal.fire({
+      title: '發送失敗',
+      text: getErrorMessage(error.code),
+      icon: 'error'
+    });
+  }
+}
+
+// 登出處理
+async function handleLogout() {
+  try {
+    await auth.signOut();
+    Swal.fire({
+      title: '已登出',
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    console.error('登出失敗:', error);
+  }
+}
+
+// 錯誤訊息處理
+function getErrorMessage(errorCode) {
+  const messages = {
+    'auth/user-not-found': '找不到此帳號',
+    'auth/wrong-password': '密碼錯誤',
+    'auth/email-already-in-use': '此電子郵件已被使用',
+    'auth/weak-password': '密碼強度不足（至少6個字元）',
+    'auth/invalid-email': '電子郵件格式不正確',
+    'auth/too-many-requests': '嘗試次數過多，請稍後再試'
+  };
+  return messages[errorCode] || '發生未知錯誤';
+}
+
+// 模態框控制
+function showRegisterModal() {
+  document.getElementById('registerModal').classList.remove('hidden');
+}
+
+function hideRegisterModal() {
+  document.getElementById('registerModal').classList.add('hidden');
+  document.getElementById('registerModal').querySelector('form').reset();
+}
+
+function showResetPasswordModal() {
+  document.getElementById('resetPasswordModal').classList.remove('hidden');
+}
+
+function hideResetPasswordModal() {
+  document.getElementById('resetPasswordModal').classList.add('hidden');
+  document.getElementById('resetPasswordModal').querySelector('form').reset();
+}
+
+function showModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+}
+
+function hideModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+}
+
+// 初始化菜單資料
+function initializeMenuData() {
+  // 如果 localStorage 中沒有菜單資料，使用預設資料
+  if (!localStorage.getItem('menuData')) {
+    localStorage.setItem('menuData', JSON.stringify(defaultMenuData));
+  }
+  
+  return JSON.parse(localStorage.getItem('menuData'));
+}
+
+// 顯示菜單編輯模態框
+function showMenuEditModal() {
+  showModal('menuEditModal');
+  initMenuEdit();
+}
+
+// 切換菜單星期
+function switchMenuDay(day) {
+  // 更新按鈕狀態
+  document.querySelectorAll('.menu-tab-btn').forEach(btn => {
+    btn.classList.remove('bg-blue-500', 'text-white');
+    btn.classList.add('bg-gray-200');
+    
+    if(btn.dataset.day === day) {
+      btn.classList.remove('bg-gray-200');
+      btn.classList.add('bg-blue-500', 'text-white');
+    }
+  });
+  
+  // 載入該天菜單
+  loadMenuContent(day);
+}
+
+// 載入菜單內容
+function loadMenuContent(day) {
+  const menuData = JSON.parse(localStorage.getItem('menuData')) || defaultMenuData;
+  const dayMenu = menuData[day];
+  
+  // 載入每日特餐
+  const dailySpecialContent = document.getElementById('dailySpecialContent');
+  dailySpecialContent.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">特餐名稱</label>
+        <input type="text" value="${dayMenu.dailySpecial.name}" 
+               onchange="updateDailySpecial('${day}', 'name', this.value)"
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">價格</label>
+        <input type="number" value="${dayMenu.dailySpecial.price}"
+               onchange="updateDailySpecial('${day}', 'price', this.value)"
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1">預設數量</label>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs mb-1">基湖棧</label>
+            <input type="number" value="${dayMenu.dailySpecial.defaultQuantity['基湖棧']}"
+                   onchange="updateDailySpecialQuantity('${day}', '基湖棧', this.value)"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs mb-1">瑞光棧</label>
+            <input type="number" value="${dayMenu.dailySpecial.defaultQuantity['瑞光棧']}"
+                   onchange="updateDailySpecialQuantity('${day}', '瑞光棧', this.value)"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs mb-1">內湖棧</label>
+            <input type="number" value="${dayMenu.dailySpecial.defaultQuantity['內湖棧']}"
+                   onchange="updateDailySpecialQuantity('${day}', '內湖棧', this.value)"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // 載入一般餐點
+  const menuItemsContent = document.getElementById('menuItemsContent');
+  menuItemsContent.innerHTML = dayMenu.items.map(item => `
+    <div class="bg-white p-4 rounded-lg shadow" data-id="${item.id}">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">餐點名稱</label>
+          <input type="text" value="${item.name}"
+                 onchange="updateMenuItem('${day}', ${item.id}, 'name', this.value)"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">價格</label>
+          <input type="number" value="${item.price}"
+                 onchange="updateMenuItem('${day}', ${item.id}, 'price', this.value)"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">預設數量</label>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs mb-1">基湖棧</label>
+              <input type="number" value="${item.defaultQuantity['基湖棧']}"
+                     onchange="updateMenuItemQuantity('${day}', ${item.id}, '基湖棧', this.value)"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs mb-1">瑞光棧</label>
+              <input type="number" value="${item.defaultQuantity['瑞光棧']}"
+                     onchange="updateMenuItemQuantity('${day}', ${item.id}, '瑞光棧', this.value)"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs mb-1">內湖棧</label>
+              <input type="number" value="${item.defaultQuantity['內湖棧']}"
+                     onchange="updateMenuItemQuantity('${day}', ${item.id}, '內湖棧', this.value)"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button onclick="deleteMenuItem('${day}', ${item.id})"
+                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+          刪除
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 更新每日特餐
+function updateDailySpecial(day, field, value) {
+  const menuData = JSON.parse(localStorage.getItem('menuData'));
+  menuData[day].dailySpecial[field] = field === 'price' ? parseInt(value) : value;
+  localStorage.setItem('menuData', JSON.stringify(menuData));
+}
+
+// 更新每日特餐預設數量
+function updateDailySpecialQuantity(day, location, value) {
+  const menuData = JSON.parse(localStorage.getItem('menuData'));
+  menuData[day].dailySpecial.defaultQuantity[location] = parseInt(value);
+  localStorage.setItem('menuData', JSON.stringify(menuData));
+}
+
+// 更新菜單項目
+function updateMenuItem(day, itemId, field, value) {
+  const menuData = JSON.parse(localStorage.getItem('menuData'));
+  const item = menuData[day].items.find(i => i.id === itemId);
+  if (item) {
+    item[field] = field === 'price' ? parseInt(value) : value;
+    localStorage.setItem('menuData', JSON.stringify(menuData));
+  }
+}
+
+// 更新菜單項目預設數量
+function updateMenuItemQuantity(day, itemId, location, value) {
+  const menuData = JSON.parse(localStorage.getItem('menuData'));
+  const item = menuData[day].items.find(i => i.id === itemId);
+  if (item) {
+    item.defaultQuantity[location] = parseInt(value);
+    localStorage.setItem('menuData', JSON.stringify(menuData));
+  }
+}
+
+// 新增菜單項目
+function addMenuItem() {
+  const day = document.querySelector('.menu-tab-btn.bg-blue-500').dataset.day;
+  const menuData = JSON.parse(localStorage.getItem('menuData'));
+  
+  const newItem = {
+    id: Date.now(), // 使用時間戳作為唯一ID
+    name: "",
+    price: 0,
+    defaultQuantity: {
+      "基湖棧": 0,
+      "瑞光棧": 0,
+      "內湖棧": 0
+    }
+  };
+  
+  menuData[day].items.push(newItem);
+  localStorage.setItem('menuData', JSON.stringify(menuData));
+  loadMenuContent(day);
+}
+
+// 刪除菜單項目
+function deleteMenuItem(day, itemId) {
+  Swal.fire({
+    title: '確定要刪除此餐點？',
+    text: "此操作無法復原",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '是的，刪除',
+    cancelButtonText: '取消'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const menuData = JSON.parse(localStorage.getItem('menuData'));
+      menuData[day].items = menuData[day].items.filter(item => item.id !== itemId);
+      localStorage.setItem('menuData', JSON.stringify(menuData));
+      loadMenuContent(day);
+      
+      Swal.fire(
+        '已刪除！',
+        '餐點已成功刪除。',
+        'success'
+      );
+    }
+  });
+}
+
+// 初始化菜單編輯頁面
+function initMenuEdit() {
+  // 確保菜單資料已初始化
+  if (!localStorage.getItem('menuData')) {
+    initializeMenuData();
+  }
+  
+  // 預設顯示週一菜單
+  switchMenuDay('monday');
+}
+
+// 同步菜單到雲端
+async function syncMenuToCloud() {
+  try {
+    Swal.fire({
+      title: '同步中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    const menuData = JSON.parse(localStorage.getItem('menuData'));
+    await db.collection('menu').doc('data').set({ menu: menuData });
+    
+    Swal.fire({
+      title: '同步成功！',
+      text: '菜單已同步到雲端',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+  } catch (error) {
+    console.error('同步菜單失敗:', error);
+    Swal.fire({
+      title: '同步失敗',
+      text: '同步菜單到雲端時發生錯誤: ' + error.message,
+      icon: 'error'
+    });
+  }
+}
+
+// 預設菜單資料結構
+const defaultMenuData = {
+  monday: {
+    dailySpecial: { 
+      name: "每日特餐 (糖醋排骨)", 
+      price: 100,
+      defaultQuantity: {
+        "基湖棧": 30,
+        "瑞光棧": 25,
+        "內湖棧": 20
+      }
+    },
+    items: [
+      { id: 1, name: "蒸燴煮鮭魚", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 2, name: "蒸燴煮鯛魚", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 3, name: "馬鈴薯燉豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 4, name: "梅干扣肉", price: 100, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 5, name: "香滷牛腱", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 6, name: "有間雙拼蓋飯", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 7, name: "蒜泥白肉", price: 90, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 8, name: "黑胡椒雞柳", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 9, name: "青花椒炒牛", price: 110, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 10, name: "香烤嫩雞腿", price: 120, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 11, name: "炒麵 + 糖醋排骨", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } }
+    ]
+  },
+  tuesday: {
+    dailySpecial: { 
+      name: "每日特餐 (宮保雞丁)", 
+      price: 100,
+      defaultQuantity: {
+        "基湖棧": 30,
+        "瑞光棧": 25,
+        "內湖棧": 20
+      }
+    },
+    items: [
+      { id: 12, name: "蒸燴煮鯛魚", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 13, name: "馬鈴薯燉豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 14, name: "梅干扣肉", price: 100, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 15, name: "香滷牛腱", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 16, name: "有間雙拼蓋飯", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 17, name: "蒜泥白肉", price: 90, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 18, name: "黑胡椒雞柳", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 19, name: "青花椒炒牛", price: 110, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 20, name: "香烤嫩雞腿", price: 120, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 21, name: "炒米粉 + 宮保雞丁", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } }
+    ]
+  },
+  wednesday: {
+    dailySpecial: { 
+      name: "每日特餐 (韓式泡菜豬)", 
+      price: 100,
+      defaultQuantity: {
+        "基湖棧": 30,
+        "瑞光棧": 25,
+        "內湖棧": 20
+      }
+    },
+    items: [
+      { id: 22, name: "蒸燴煮鮭魚", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 23, name: "蒸燴煮鯛魚", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 24, name: "馬鈴薯燉豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 25, name: "梅干扣肉", price: 100, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 26, name: "香滷牛腱", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 27, name: "有間雙拼蓋飯", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 28, name: "蒜泥白肉", price: 90, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 29, name: "黑胡椒雞柳", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 30, name: "青花椒炒牛", price: 110, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 31, name: "香烤嫩雞腿", price: 120, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 32, name: "炒麵 + 韓式泡菜豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } }
+    ]
+  },
+  thursday: {
+    dailySpecial: { 
+      name: "每日特餐 (泰式打拋豬)", 
+      price: 100,
+      defaultQuantity: {
+        "基湖棧": 30,
+        "瑞光棧": 25,
+        "內湖棧": 20
+      }
+    },
+    items: [
+      { id: 33, name: "蒸燴煮鯛魚", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 34, name: "馬鈴薯燉豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 35, name: "梅干扣肉", price: 100, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 36, name: "香滷牛腱", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 37, name: "有間雙拼蓋飯", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 38, name: "蒜泥白肉", price: 90, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 39, name: "黑胡椒雞柳", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 40, name: "青花椒炒牛", price: 110, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 41, name: "香烤嫩雞腿", price: 120, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 42, name: "炒粄條 + 泰式打拋豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } }
+    ]
+  },
+  friday: {
+    dailySpecial: { 
+      name: "每日特餐 (川味水煮牛)", 
+      price: 110,
+      defaultQuantity: {
+        "基湖棧": 30,
+        "瑞光棧": 25,
+        "內湖棧": 20
+      }
+    },
+    items: [
+      { id: 43, name: "馬鈴薯燉豬", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 44, name: "梅干扣肉", price: 100, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 45, name: "香滷牛腱", price: 130, defaultQuantity: { "基湖棧": 18, "瑞光棧": 15, "內湖棧": 12 } },
+      { id: 46, name: "有間雙拼蓋飯", price: 140, defaultQuantity: { "基湖棧": 15, "瑞光棧": 12, "內湖棧": 10 } },
+      { id: 47, name: "蒜泥白肉", price: 90, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 48, name: "黑胡椒雞柳", price: 100, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } },
+      { id: 49, name: "青花椒炒牛", price: 110, defaultQuantity: { "基湖棧": 20, "瑞光棧": 16, "內湖棧": 12 } },
+      { id: 50, name: "香烤嫩雞腿", price: 120, defaultQuantity: { "基湖棧": 22, "瑞光棧": 18, "內湖棧": 14 } },
+      { id: 51, name: "炒麵 + 川味水煮牛", price: 110, defaultQuantity: { "基湖棧": 25, "瑞光棧": 20, "內湖棧": 15 } }
+    ]
+  }
+};
+
+// 初始化預設資料
+async function initializeDefaultData() {
+  try {
+    // 檢查並創建預設據點
+    const locationsSnap = await db.collection('locations').get();
+    if (locationsSnap.empty) {
+      console.log('創建預設據點...');
+      const defaultLocations = ['基湖棧', '瑞光棧', '內湖棧'];
+      const batch = db.batch();
+      defaultLocations.forEach(name => {
+        const docRef = db.collection('locations').doc();
+        batch.set(docRef, { name, createdAt: new Date() });
+      });
+      await batch.commit();
+    }
+    
+    // 檢查並創建預設菜單
+    const menuDoc = await db.collection('menu').doc('data').get();
+    if (!menuDoc.exists) {
+      console.log('創建預設菜單...');
+      await db.collection('menu').doc('data').set({ menu: defaultMenuData });
+    }
+    
+    console.log('預設資料初始化完成');
+  } catch (error) {
+    console.error('初始化預設資料失敗:', error);
+  }
+}
+
+async function loadAllData() {
+  try {
+    console.log('開始載入資料...');
+    
+    // 使用實時監聽器確保跨裝置同步
+    db.collection('reports').orderBy('date', 'desc').onSnapshot((snapshot) => {
+      reports = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      displayReports();
+      console.log('戰報資料已同步:', reports.length, '筆');
+    }, (error) => {
+      console.error('戰報資料監聽失敗:', error);
+    });
+    
+    db.collection('users').onSnapshot((snapshot) => {
+      staffList = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      updateStaffSelect();
+      console.log('人員資料已同步:', staffList.length, '筆');
+    }, (error) => {
+      console.error('人員資料監聽失敗:', error);
+    });
+    
+    db.collection('locations').onSnapshot((snapshot) => {
+      locations = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      updateLocationSelect();
+      console.log('據點資料已同步:', locations.length, '筆');
+    }, (error) => {
+      console.error('據點資料監聽失敗:', error);
+    });
+    
+    db.collection('schedules').onSnapshot((snapshot) => {
+      schedules = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      console.log('班表資料已同步:', schedules.length, '筆');
+      // 如果班表管理頁面已開啟，重新顯示
+      if (document.getElementById('scheduleModal').style.display !== 'none') {
+        displayScheduleCalendar();
+      }
+    }, (error) => {
+      console.error('班表資料監聽失敗:', error);
+    });
+    
+    db.collection('menu').doc('data').onSnapshot((doc) => {
+      menuData = doc.exists ? doc.data().menu || {} : {};
+      autoLoadMenuByDate();
+      console.log('菜單資料已同步');
+    }, (error) => {
+      console.error('菜單資料監聽失敗:', error);
+    });
+    
+    db.collection('leaveRequests').onSnapshot((snapshot) => {
+      leaveRequests = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      console.log('請假資料已同步:', leaveRequests.length, '筆');
+    }, (error) => {
+      console.error('請假資料監聽失敗:', error);
+    });
+    
+    db.collection('announcements').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+      announcements = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      displayAnnouncements();
+      console.log('公告資料已同步:', announcements.length, '筆');
+    }, (error) => {
+      console.error('公告資料監聽失敗:', error);
+    });
+    
+    // 初始化預設資料
+    await initializeDefaultData();
+    updateUI();
+    
+    console.log('所有資料監聽器設置完成，支援跨裝置即時同步');
+    
+  } catch (error) {
+    console.error('載入資料失敗:', error);
+    Swal.fire({
+      title: '資料載入失敗',
+      text: `錯誤訊息: ${error.message}`,
+      icon: 'error',
+      confirmButtonText: '重試',
+      showCancelButton: true,
+      cancelButtonText: '稍後再試'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        loadAllData();
+      }
+    });
+  }
+}
+
+function updateUI() {
+  updateLocationSelect();
+  updateStaffSelect();
+  displayReports();
+  
+  // 設定今天的日期
+  const today = new Date().toISOString().split('T')[0];
+  const reportDateInput = document.getElementById('reportDate');
+  if (reportDateInput) {
+    reportDateInput.value = today;
+  }
+}
+
+function updateLocationSelect() {
+  const select = document.getElementById('location');
+  if (select) {
+    select.innerHTML = '<option value="">請選擇據點</option>';
+    locations.forEach(location => {
+      const name = location.name || location;
+      select.innerHTML += `<option value="${name}">${name}</option>`;
+    });
+  }
+}
+
+function updateStaffSelect() {
+  const select = document.getElementById('staff');
+  if (select) {
+    select.innerHTML = '<option value="">請選擇填寫人</option>';
+    staffList.forEach(staff => {
+      select.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+    });
+  }
+}
+
+function displayReports() {
+  const container = document.getElementById('reportsContainer');
+  if (!container) return;
+  
+  if (reports.length === 0) {
+    container.innerHTML = '<div class="text-center text-gray-500 py-8">尚無戰報資料</div>';
+    return;
+  }
+  
+  container.innerHTML = reports.map(report => `
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h3 class="text-xl font-bold text-gray-800">${report.date} - ${report.location}</h3>
+          <p class="text-gray-600">填寫人：${report.staff} | 狀況：${report.salesStatus}</p>
+        </div>
+        <div class="text-right">
+          <div class="text-2xl font-bold text-green-600">$${(report.finalTotal || 0).toLocaleString()}</div>
+          <div class="text-sm text-gray-500">實收金額</div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="bg-blue-50 p-3 rounded">
+          <div class="text-sm text-gray-600">銷售小計</div>
+          <div class="text-lg font-semibold text-blue-600">$${(report.salesTotal || 0).toLocaleString()}</div>
+        </div>
+        <div class="bg-red-50 p-3 rounded">
+          <div class="text-sm text-gray-600">折扣金額</div>
+          <div class="text-lg font-semibold text-red-600">$${(report.totalDiscount || 0).toLocaleString()}</div>
+        </div>
+        <div class="bg-purple-50 p-3 rounded">
+          <div class="text-sm text-gray-600">電子支付</div>
+          <div class="text-lg font-semibold text-purple-600">$${(report.electronicPayment || 0).toLocaleString()}</div>
+        </div>
+      </div>
+      
+      ${report.items && report.items.length > 0 ? `
+        <div class="mb-4">
+          <h4 class="font-semibold text-gray-700 mb-2">銷售明細</h4>
+          <div class="bg-gray-50 p-3 rounded">
+            ${report.items.map(item => `
+              <div class="flex justify-between text-sm py-1">
+                <span>${item.name} x ${item.quantity}</span>
+                <span>$${(item.subtotal || 0).toLocaleString()}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      
+      ${report.supplies && Object.values(report.supplies).some(v=>v)
+        ? `<div class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded">
+            <h4 class="font-semibold text-orange-700 mb-2">📦 備品進貨需求</h4>
+            <ul class="text-sm text-orange-900 space-y-1">
+              ${report.supplies.bag_half ? `<li>單色提袋-半斤包：${report.supplies.bag_half}</li>` : ''}
+              ${report.supplies.bag_1kg ? `<li>單色提袋-1斤包：${report.supplies.bag_1kg}</li>` : ''}
+              ${report.supplies.bag_2kg ? `<li>單色提袋-2斤包：${report.supplies.bag_2kg}</li>` : ''}
+              ${report.supplies.bag_3kg ? `<li>單色提袋-3斤包：${report.supplies.bag_3kg}</li>` : ''}
+              ${report.supplies.chopsticks ? `<li>筷子(包)：${report.supplies.chopsticks}</li>` : ''}
+              ${report.supplies.spoons ? `<li>免洗湯匙(包)：${report.supplies.spoons}</li>` : ''}
+              ${report.supplies.soup_cups ? `<li>320湯杯(箱)：${report.supplies.soup_cups}</li>` : ''}
+              ${report.supplies.soup_lids ? `<li>320湯杯蓋(箱)：${report.supplies.soup_lids}</li>` : ''}
+              ${report.supplies.point_cards ? `<li>集點卡(張)：${report.supplies.point_cards}</li>` : ''}
+              ${report.supplies.alcohol_wipes ? `<li>酒精擦(包)：${report.supplies.alcohol_wipes}</li>` : ''}
+              ${report.supplies.notes ? `<li class="text-xs text-orange-700">備註：${report.supplies.notes}</li>` : ''}
+            </ul>
+          </div>`
+        : ''}
+      
+      ${report.customerFeedback || report.myResponse ? `
+        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+          <h4 class="font-semibold text-blue-700 mb-2">💬 建議與反饋</h4>
+          ${report.customerFeedback ? `
+            <div class="mb-3">
+              <div class="text-sm text-blue-600 font-medium">客戶建議與反饋</div>
+              <div class="text-blue-900 text-sm">${report.customerFeedback}</div>
+            </div>
+          ` : ''}
+          ${report.myResponse ? `
+            <div>
+              <div class="text-sm text-blue-600 font-medium">我的建議與反應狀況</div>
+              <div class="text-blue-900 text-sm">${report.myResponse}</div>
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
+      
+      ${report.notes ? `
+        <div class="mt-4 p-3 bg-gray-50 rounded">
+          <div class="text-sm text-gray-600">其他備註</div>
+          <div class="text-gray-800">${report.notes}</div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// 計算相關函數
+function getCurrentMenuDay() {
+  const date = new Date();
+  const day = date.getDay();
+  return day === 0 || day === 6 ? 'monday' : ['monday','tuesday','wednesday','thursday','friday'][day-1];
+}
+
+function calculateSoldQuantity(remainingInput) {
+  const salesItem = remainingInput.closest('.sales-item');
+  const defaultQty = parseInt(salesItem.querySelector('input[name="defaultQty"]').value) || 0;
+  const remaining = parseInt(remainingInput.value) || 0;
+  const soldQty = Math.max(0, defaultQty - remaining);
+  
+  salesItem.querySelector('span[name="soldQty"]').textContent = soldQty;
+  calculateTotal();
+}
+
+function calculateTotal() {
+  const salesItems = document.querySelectorAll('.sales-item');
+  let salesTotal = 0;
+  
+  salesItems.forEach(item => {
+    const price = parseFloat(item.querySelector('input[name="price"]').value) || 0;
+    const soldQty = parseInt(item.querySelector('span[name="soldQty"]').textContent) || 0;
+    const subtotal = price * soldQty;
+    salesTotal += subtotal;
+  });
+  
+  const paperCards = parseInt(document.getElementById('paperCards').value) || 0;
+  const digitalCards = parseInt(document.getElementById('digitalCards').value) || 0;
+  const totalDiscount = (paperCards + digitalCards) * 10;
+  const electronicPayment = parseFloat(document.getElementById('electronicPayment').value) || 0;
+  const finalTotal = Math.max(0, salesTotal - totalDiscount);
+  const cashPayment = Math.max(0, finalTotal - electronicPayment);
+  
+  document.getElementById('salesSubtotal').textContent = salesTotal.toLocaleString();
+  document.getElementById('discountAmount').textContent = totalDiscount.toLocaleString();
+  document.getElementById('electronicTotal').textContent = electronicPayment.toLocaleString();
+  document.getElementById('finalTotalDisplay').textContent = finalTotal.toLocaleString();
+  document.getElementById('cashTotal').textContent = `${cashPayment.toLocaleString()}`;
+}
+
+// 臨時增減數量功能
+function addTempAdjustment() {
+  const container = document.getElementById('tempAdjustments');
+  const newRow = document.createElement('div');
+  newRow.className = 'bg-white p-3 rounded-lg border border-blue-200 shadow-sm';
+  newRow.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">餐點名稱</label>
+        <input type="text" placeholder="請輸入餐點名稱" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">增減數量</label>
+        <input type="number" placeholder="+5 或 -3" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">據點</label>
+        <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 location-select-temp">
+          <option value="">選擇據點</option>
+          <option value="基湖棧">基湖棧</option>
+          <option value="瑞光棧">瑞光棧</option>
+          <option value="內湖棧">內湖棧</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">時間</label>
+        <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
+        <input type="text" placeholder="原因說明" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <button type="button" onclick="removeTempAdjustment(this)" class="w-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+          ➖ 移除
+        </button>
+      </div>
+    </div>
+  `;
+  container.appendChild(newRow);
+}
+
+function removeTempAdjustment(button) {
+  button.parentElement.remove();
+}
+
+// 備品管理功能
+let selectedSupplies = {};
+
+function addSupplyItem() {
+  const select = document.getElementById('supplySelect');
+  const quantityInput = document.getElementById('supplyQuantity');
+  const selectedValue = select.value;
+  const quantity = parseInt(quantityInput.value) || 0;
+  
+  if (!selectedValue || quantity <= 0) {
+    Swal.fire('錯誤', '請選擇備品項目並輸入有效數量', 'error');
+    return;
+  }
+  
+  const selectedText = select.options[select.selectedIndex].text;
+  
+  if (selectedSupplies[selectedValue]) {
+    selectedSupplies[selectedValue] += quantity;
+  } else {
+    selectedSupplies[selectedValue] = quantity;
+  }
+  
+  updateSelectedSuppliesDisplay();
+  
+  // 清空選擇
+  select.value = '';
+  quantityInput.value = '';
+}
+
+function updateSelectedSuppliesDisplay() {
+  const container = document.getElementById('selectedSupplies');
+  const supplyNames = {
+    'bag_half': '單色提袋 - 半斤包',
+    'bag_1kg': '單色提袋 - 1斤包',
+    'bag_2kg': '單色提袋 - 2斤包',
+    'bag_3kg': '單色提袋 - 3斤包',
+    'chopsticks': '筷子 (包)',
+    'spoons': '免洗湯匙 (包)',
+    'soup_cups': '320湯杯 (箱)',
+    'soup_lids': '320湯杯蓋 (箱)',
+    'point_cards': '集點卡 (張)',
+    'alcohol_wipes': '酒精擦 (包)'
+  };
+  
+  container.innerHTML = Object.entries(selectedSupplies).map(([key, quantity]) => `
+    <div class="flex justify-between items-center bg-white p-2 rounded border">
+      <span>${supplyNames[key]}: ${quantity}</span>
+      <button type="button" onclick="removeSupplyItem('${key}')" class="text-red-600 hover:text-red-800 text-sm">移除</button>
+    </div>
+  `).join('');
+}
+
+function removeSupplyItem(key) {
+  delete selectedSupplies[key];
+  updateSelectedSuppliesDisplay();
+}
+
+function autoLoadMenuByDate() {
+  const date = new Date(), day = date.getDay();
+  const menuDay = day === 0 || day === 6 ? 'monday' : ['monday','tuesday','wednesday','thursday','friday'][day-1];
+  loadMenuItems(menuDay);
+  highlightMenuDay(menuDay);
+}
+
+function highlightMenuDay(day) {
+  document.querySelectorAll('.menu-day-btn').forEach(btn => {
+    btn.classList.remove('bg-blue-500','text-white'); 
+    btn.classList.add('bg-gray-500');
+    if(btn.dataset.day===day) { 
+      btn.classList.remove('bg-gray-500'); 
+      btn.classList.add('bg-blue-500','text-white'); 
+    }
+  });
+}
+
+function loadMenuItems(day) {
+  const location = document.getElementById('location')?.value;
+  const salesItems = document.getElementById('salesItems');
+  
+  // 從雲端或本地載入菜單資料
+  const currentMenuData = menuData && Object.keys(menuData).length > 0 ? menuData : JSON.parse(localStorage.getItem('menuData')) || defaultMenuData;
+  
+  if (!currentMenuData[day] || !location || !salesItems) {
+    console.log('無效的日期或未選擇據點');
+    return;
+  }
+  
+  // 清空現有項目
+  salesItems.innerHTML = '';
+  
+  // 載入每日特餐
+  if (currentMenuData[day].dailySpecial) {
+    const special = currentMenuData[day].dailySpecial;
+    const defaultQty = special.defaultQuantity?.[location] || 0;
+    
+    const specialElement = document.createElement('div');
+    specialElement.className = 'sales-item grid grid-cols-1 md:grid-cols-5 gap-2 mb-2 p-3 bg-yellow-50 rounded border border-yellow-200';
+    specialElement.innerHTML = `
+      <div>
+        <label class="text-sm font-medium">商品名稱</label>
+        <input type="text" name="itemName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="${special.name}" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-medium">單價</label>
+        <input type="number" name="price" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="${special.price}" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-medium">預設數量</label>
+        <input type="number" name="defaultQty" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" value="${defaultQty}" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-medium">剩餘數量</label>
+        <input type="number" name="remaining" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0" min="0" onchange="calculateSoldQuantity(this)">
+      </div>
+      <div class="flex flex-col">
+        <label class="text-sm font-medium">實際賣出</label>
+        <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-green-100 flex items-center justify-center font-semibold text-green-600">
+          <span name="soldQty">${defaultQty}</span>
+        </div>
+      </div>
+    `;
+    
+    salesItems.appendChild(specialElement);
+  }
+  
+  // 載入該天的一般菜單項目
+  (currentMenuData[day].items || []).forEach(item => {
+    const defaultQty = item.defaultQuantity?.[location] || 0;
+    
+    const itemElement = document.createElement('div');
+    itemElement.className = 'sales-item grid grid-cols-1 md:grid-cols-5 gap-2 mb-2 p-3 bg-gray-50 rounded';
+    itemElement.innerHTML = `
+      <div>
+        <label class="text-sm font-medium">商品名稱</label>
+        <input type="text" name="itemName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="${item.name}" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-medium">單價</label>
+        <input type="number" name="price" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="${item.price}" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-medium">預設數量</label>
+        <input type="number" name="defaultQty" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" value="${defaultQty}" readonly>
+      </div>
+      <div>
+        <label class="text-sm font-medium">剩餘數量</label>
+        <input type="number" name="remaining" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0" min="0" onchange="calculateSoldQuantity(this)">
+      </div>
+      <div class="flex flex-col">
+        <label class="text-sm font-medium">實際賣出</label>
+        <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-green-100 flex items-center justify-center font-semibold text-green-600">
+          <span name="soldQty">${defaultQty}</span>
+        </div>
+      </div>
+    `;
+    
+    salesItems.appendChild(itemElement);
+  });
+  
+  highlightMenuDay(day);
+  calculateTotal();
+}
+
+// 戰報提交
+async function submitReport(event) {
+  event.preventDefault();
+  
+  Swal.fire({
+    title: '儲存中...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+  
+  try {
+    const salesItems = Array.from(document.querySelectorAll('.sales-item')).map(item => ({
+      name: item.querySelector('input[name="itemName"]').value,
+      price: parseFloat(item.querySelector('input[name="price"]').value) || 0,
+      defaultQuantity: parseInt(item.querySelector('input[name="defaultQty"]').value) || 0,
+      remaining: parseInt(item.querySelector('input[name="remaining"]').value) || 0,
+      soldQuantity: parseInt(item.querySelector('span[name="soldQty"]').textContent) || 0,
+      subtotal: (parseFloat(item.querySelector('input[name="price"]').value) || 0) *
+                (parseInt(item.querySelector('span[name="soldQty"]').textContent) || 0)
+    }));
+    
+    // 收集臨時增減數量
+    const tempAdjustments = Array.from(document.querySelectorAll('#tempAdjustments .grid')).map(row => {
+      const inputs = row.querySelectorAll('input');
+      const select = row.querySelector('select');
+      return {
+        itemName: inputs[0].value,
+        adjustment: parseInt(inputs[1].value) || 0,
+        location: select.value,
+        time: inputs[2].value,
+        note: inputs[3].value
+      };
+    }).filter(adj => adj.itemName && adj.adjustment !== 0);
+    
+    const date = document.getElementById('reportDate').value;
+    const location = document.getElementById('location').value;
+    const staff = document.getElementById('staff').value;
+    const salesStatus = document.getElementById('salesStatus').value;
+    const notes = document.getElementById('notes').value;
+    const customerFeedback = document.getElementById('customerFeedback').value;
+    const myResponse = document.getElementById('myResponse').value;
+    const paperCards = parseInt(document.getElementById('paperCards').value) || 0;
+    const digitalCards = parseInt(document.getElementById('digitalCards').value) || 0;
+    const totalDiscount = (paperCards + digitalCards) * 10;
+    const salesTotal = salesItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const electronicPayment = parseFloat(document.getElementById('electronicPayment').value) || 0;
+    const finalTotal = Math.max(0, salesTotal - totalDiscount);
+    const cashPayment = Math.max(0, finalTotal - electronicPayment);
+
+    // 使用新的備品選擇方式
+    const supplies = {
+      ...selectedSupplies,
+      notes: document.getElementById('supplyNotes').value || ''
+    };
+
+    if (!date || !location || !staff) {
+      Swal.fire('錯誤', '請填寫所有必填欄位（日期、據點、填寫人）', 'error');
+      return;
+    }
+    
+    if (!salesStatus) {
+      Swal.fire('錯誤', '請選擇營業狀況', 'error');
+      return;
+    }
+    
+    const reportData = {
+      date, location, staff, salesStatus, notes,
+      customerFeedback, myResponse,
+      items: salesItems,
+      tempAdjustments,
+      paperCards, digitalCards, totalDiscount,
+      salesTotal, electronicPayment, cashPayment,
+      finalTotal,
+      supplies,
+      createdBy: currentUser.uid,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const docRef = await db.collection('reports').add(reportData);
+    console.log('戰報儲存成功，ID:', docRef.id);
+    
+    Swal.fire({
+      title: '成功！',
+      text: '戰報已成功儲存',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    
+    // 清空表單
+    document.getElementById('createReportModal').querySelector('form').reset();
+    document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('salesItems').innerHTML = '';
+    document.getElementById('tempAdjustments').innerHTML = `
+      <div class="grid grid-cols-12 gap-2 items-center">
+        <input type="text" placeholder="餐點名稱" class="col-span-3 px-3 py-2 border border-gray-300 rounded-md text-sm">
+        <input type="number" placeholder="增減數量" class="col-span-2 px-3 py-2 border border-gray-300 rounded-md text-sm">
+        <select class="col-span-2 px-3 py-2 border border-gray-300 rounded-md text-sm location-select-temp">
+          <option value="">選擇據點</option>
+          <option value="基湖棧">基湖棧</option>
+          <option value="瑞光棧">瑞光棧</option>
+          <option value="內湖棧">內湖棧</option>
+        </select>
+        <input type="time" class="col-span-2 px-3 py-2 border border-gray-300 rounded-md text-sm">
+        <input type="text" placeholder="備註" class="col-span-2 px-3 py-2 border border-gray-300 rounded-md text-sm">
+        <button type="button" onclick="addTempAdjustment()" class="col-span-1 bg-blue-500 text-white px-3 py-2 rounded text-sm">+</button>
+      </div>
+    `;
+    selectedSupplies = {};
+    updateSelectedSuppliesDisplay();
+    calculateTotal();
+    
+    hideModal('createReportModal');
+    await loadAllData();
+    
+  } catch (err) {
+    console.error('儲存戰報失敗:', err);
+    Swal.fire({
+      title: '儲存失敗',
+      text: `錯誤訊息: ${err.message}`,
+      icon: 'error',
+      confirmButtonText: '重試'
+    });
+  }
+}
+
+// 歷史紀錄
+function showHistoryModal() {
+  let html = `<div class="flex justify-between mb-4"><h2 class="text-xl font-bold">歷史紀錄</h2>
+    <button onclick="Swal.close()" class="text-2xl">&times;</button></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white rounded shadow text-xs">
+        <thead><tr>
+          <th class="px-2 py-1">日期</th>
+          <th>據點</th>
+          <th>填寫人</th>
+          <th>小計</th>
+          <th>折扣</th>
+          <th>實收</th>
+        </tr></thead>
+        <tbody>
+          ${reports.map(r=>`
+            <tr>
+              <td class="px-2 py-1">${r.date}</td>
+              <td>${r.location}</td>
+              <td>${r.staff}</td>
+              <td>${r.salesTotal?.toLocaleString()||''}</td>
+              <td>${r.totalDiscount?.toLocaleString()||''}</td>
+              <td>${r.finalTotal?.toLocaleString()||''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  Swal.fire({html, width: "60vw", showConfirmButton: false});
+}
+
+// 菜單管理
+function showMenuEditModal() {
+  let html = `
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">🍽️ 菜單管理</h2>
+      <button onclick="hideModal('menuEditModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+
+    <!-- 星期選擇 -->
+    <div class="mb-6">
+      <div class="flex space-x-2">
+        <button onclick="switchMenuDay('monday')" class="menu-tab-btn bg-gray-200 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors" data-day="monday">週一</button>
+        <button onclick="switchMenuDay('tuesday')" class="menu-tab-btn bg-gray-200 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors" data-day="tuesday">週二</button>
+        <button onclick="switchMenuDay('wednesday')" class="menu-tab-btn bg-gray-200 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors" data-day="wednesday">週三</button>
+        <button onclick="switchMenuDay('thursday')" class="menu-tab-btn bg-gray-200 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors" data-day="thursday">週四</button>
+        <button onclick="switchMenuDay('friday')" class="menu-tab-btn bg-gray-200 px-4 py-2 rounded hover:bg-blue-500 hover:text-white transition-colors" data-day="friday">週五</button>
+      </div>
+    </div>
+
+    <!-- 菜單內容 -->
+    <div id="menuContent" class="space-y-6">
+      <!-- 每日特餐 -->
+      <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <h3 class="text-lg font-semibold mb-3">每日特餐</h3>
+        <div id="dailySpecialContent"></div>
+      </div>
+
+      <!-- 一般餐點 -->
+      <div>
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-lg font-semibold">一般餐點</h3>
+          <button onclick="addMenuItem()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">新增餐點</button>
+        </div>
+        <div id="menuItemsContent" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- 儲存按鈕 -->
+    <div class="flex justify-end space-x-4 mt-8 pt-6 border-t">
+      <button onclick="hideModal('menuEditModal')" 
+              class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition-colors">
+        關閉
+      </button>
+      <button onclick="syncMenuToCloud()" 
+              class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
+        同步到雲端
+      </button>
+      <button onclick="uploadMenuToFirestore()" 
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
+        將預設菜單上傳到 Firestore
+      </button>
+    </div>
+  `;
+  document.getElementById('menuEditContent').innerHTML = html;
+  showModal('menuEditModal');
+  initMenuEdit();
+}
+
+// 將預設菜單上傳到 Firestore
+function uploadMenuToFirestore() {
+  db.collection('menu').doc('data').set({ menu: defaultMenuData })
+    .then(() => {
+      Swal.fire('成功', '預設菜單已上傳到 Firestore', 'success');
+    })
+    .catch((error) => {
+      Swal.fire('錯誤', '上傳失敗: ' + error.message, 'error');
+    });
+}
+
+// 人員管理
+function showStaffManageModal() {
+  let html = `
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">👥 人員管理</h2>
+      <button onclick="hideModal('staffManageModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    
+    <form onsubmit="addStaff(event)" class="mb-6 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-4 text-gray-700">新增人員</h3>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">姓名</label>
+          <input type="text" id="newStaffName" placeholder="請輸入姓名" 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">加入時間</label>
+          <input type="date" id="newStaffJoinDate" 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">等級</label>
+          <select id="newStaffLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <option value="bronze">🥉 銅級員工</option>
+            <option value="silver">🥈 銀級員工</option>
+            <option value="gold">🥇 金級員工</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">權限</label>
+          <select id="newStaffRole" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <option value="staff">員工</option>
+            <option value="admin">管理員</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+            新增人員
+          </button>
+        </div>
+      </div>
+    </form>
+    
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="px-4 py-3 bg-gray-50 border-b">
+        <h3 class="text-lg font-semibold text-gray-700">現有人員列表</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">等級</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">權限</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">加入時間</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">在職天數</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${staffList.map(staff => {
+              const levelIcons = {
+                bronze: '🥉',
+                silver: '🥈', 
+                gold: '🥇'
+              };
+              const levelNames = {
+                bronze: '銅級員工',
+                silver: '銀級員工',
+                gold: '金級員工'
+              };
+              const levelColors = {
+                bronze: 'bg-orange-100 text-orange-800',
+                silver: 'bg-gray-100 text-gray-800',
+                gold: 'bg-yellow-100 text-yellow-800'
+              };
+              
+              const joinDate = staff.joinDate ? new Date(staff.joinDate) : (staff.createdAt ? new Date(staff.createdAt.toDate()) : new Date());
+              const workingDays = Math.floor((new Date() - joinDate) / (1000 * 60 * 60 * 24));
+              
+              return `
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <span class="text-2xl mr-2">${levelIcons[staff.level] || '🥉'}</span>
+                      <div class="text-sm font-medium text-gray-900">${staff.name || '未設定'}</div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${levelColors[staff.level] || levelColors.bronze}">
+                      ${levelNames[staff.level] || levelNames.bronze}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      staff.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }">
+                      ${staff.role === 'admin' ? '管理員' : '員工'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${joinDate.toLocaleDateString()}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${workingDays} 天
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="editStaff('${staff.id}')" class="text-blue-600 hover:text-blue-900 mr-3">編輯</button>
+                    <button onclick="deleteStaff('${staff.id}')" class="text-red-600 hover:text-red-900">刪除</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('staffManageContent').innerHTML = html;
+  
+  // 設定預設加入時間為今天
+  const today = new Date().toISOString().split('T')[0];
+  setTimeout(() => {
+    const joinDateInput = document.getElementById('newStaffJoinDate');
+    if (joinDateInput) joinDateInput.value = today;
+  }, 100);
+  
+  showModal('staffManageModal');
+}
+
+async function addStaff(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('newStaffName').value.trim();
+  const joinDate = document.getElementById('newStaffJoinDate').value;
+  const level = document.getElementById('newStaffLevel').value;
+  const role = document.getElementById('newStaffRole').value;
+  
+  if (!name || !joinDate) {
+    Swal.fire('錯誤', '請填寫所有必填欄位', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '新增中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    await db.collection('users').add({ 
+      name, 
+      joinDate,
+      level,
+      role, 
+      createdAt: new Date() 
+    });
+    
+    Swal.fire('成功', '人員已新增', 'success');
+    
+    // 清空表單
+    document.getElementById('newStaffName').value = '';
+    document.getElementById('newStaffJoinDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('newStaffLevel').value = 'bronze';
+    document.getElementById('newStaffRole').value = 'staff';
+    
+    // 重新載入人員管理頁面
+    setTimeout(() => showStaffManageModal(), 1000);
+    
+  } catch (error) {
+    console.error('新增人員失敗:', error);
+    Swal.fire('錯誤', '新增人員失敗: ' + error.message, 'error');
+  }
+}
+
+async function editStaff(id) {
+  const staff = staffList.find(s => s.id === id);
+  if (!staff) return;
+  
+  const joinDate = staff.joinDate || (staff.createdAt ? staff.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  
+  const { value: formValues } = await Swal.fire({
+    title: '編輯人員資料',
+    html: `
+      <div class="text-left space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">姓名</label>
+          <input id="editName" class="swal2-input" value="${staff.name || ''}" placeholder="姓名">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">加入時間</label>
+          <input id="editJoinDate" class="swal2-input" type="date" value="${joinDate}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">等級</label>
+          <select id="editLevel" class="swal2-select">
+            <option value="bronze" ${staff.level === 'bronze' ? 'selected' : ''}>🥉 銅級員工</option>
+            <option value="silver" ${staff.level === 'silver' ? 'selected' : ''}>🥈 銀級員工</option>
+            <option value="gold" ${staff.level === 'gold' ? 'selected' : ''}>🥇 金級員工</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">權限</label>
+          <select id="editRole" class="swal2-select">
+            <option value="staff" ${staff.role === 'staff' ? 'selected' : ''}>員工</option>
+            <option value="admin" ${staff.role === 'admin' ? 'selected' : ''}>管理員</option>
+          </select>
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    preConfirm: () => {
+      return {
+        name: document.getElementById('editName').value,
+        joinDate: document.getElementById('editJoinDate').value,
+        level: document.getElementById('editLevel').value,
+        role: document.getElementById('editRole').value
+      };
+    }
+  });
+  
+  if (formValues) {
+    try {
+      const updateData = {
+        name: formValues.name,
+        joinDate: formValues.joinDate,
+        level: formValues.level,
+        role: formValues.role,
+        updatedAt: new Date()
+      };
+      
+      await db.collection('users').doc(id).update(updateData);
+      
+      Swal.fire('成功', '人員資料已更新', 'success');
+      setTimeout(() => showStaffManageModal(), 1000);
+      
+    } catch (error) {
+      console.error('更新人員失敗:', error);
+      Swal.fire('錯誤', '更新人員失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+async function deleteStaff(id) {
+  const staff = staffList.find(s => s.id === id);
+  if (!staff) return;
+  
+  const result = await Swal.fire({
+    title: '確定刪除？',
+    text: `確定要刪除 ${staff.name} 嗎？此操作無法復原。`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('users').doc(id).delete();
+      Swal.fire('已刪除', '人員已成功刪除', 'success');
+      setTimeout(() => showStaffManageModal(), 1000);
+    } catch (error) {
+      console.error('刪除人員失敗:', error);
+      Swal.fire('錯誤', '刪除人員失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 據點管理
+function showLocationManageModal() {
+  let html = `
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">📍 據點管理</h2>
+      <button onclick="hideModal('locationManageModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    
+    <form onsubmit="addLocation(event)" class="mb-6 p-4 bg-gray-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-4 text-gray-700">新增據點</h3>
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-2">據點名稱</label>
+          <input type="text" id="newLocationName" placeholder="請輸入據點名稱" 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
+            新增據點
+          </button>
+        </div>
+      </div>
+    </form>
+    
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="px-4 py-3 bg-gray-50 border-b">
+        <h3 class="text-lg font-semibold text-gray-700">現有據點列表</h3>
+      </div>
+      <div class="divide-y divide-gray-200">
+        ${locations.map((location, index) => {
+          const name = location.name || location;
+          const id = location.id || `location_${index}`;
+          return `
+            <div class="px-6 py-4 flex justify-between items-center hover:bg-gray-50">
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-blue-600 font-semibold text-sm">${index + 1}</span>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-900">${name}</div>
+                  <div class="text-sm text-gray-500">據點編號: ${id}</div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="editLocation('${id}', '${name}')" class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                  編輯
+                </button>
+                <button onclick="deleteLocation('${id}', '${name}')" class="text-red-600 hover:text-red-900 text-sm font-medium">
+                  刪除
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        ${locations.length === 0 ? `
+          <div class="px-6 py-8 text-center text-gray-500">
+            <div class="text-lg mb-2">📍</div>
+            <div>尚未新增任何據點</div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('locationManageContent').innerHTML = html;
+  showModal('locationManageModal');
+}
+
+async function addLocation(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('newLocationName').value.trim();
+  if (!name) {
+    Swal.fire('錯誤', '請輸入據點名稱', 'error');
+    return;
+  }
+  
+  // 檢查是否已存在相同名稱的據點
+  const existingLocation = locations.find(loc => (loc.name || loc) === name);
+  if (existingLocation) {
+    Swal.fire('錯誤', '此據點名稱已存在', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '新增中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    await db.collection('locations').add({ 
+      name, 
+      createdAt: new Date() 
+    });
+    
+    Swal.fire('成功', '據點已新增', 'success');
+    
+    // 清空表單
+    document.getElementById('newLocationName').value = '';
+    
+    // 重新載入據點管理頁面
+    setTimeout(() => showLocationManageModal(), 1000);
+    
+  } catch (error) {
+    console.error('新增據點失敗:', error);
+    Swal.fire('錯誤', '新增據點失敗: ' + error.message, 'error');
+  }
+}
+
+async function editLocation(id, currentName) {
+  const { value: newName } = await Swal.fire({
+    title: '編輯據點名稱',
+    input: 'text',
+    inputValue: currentName,
+    inputPlaceholder: '請輸入新的據點名稱',
+    showCancelButton: true,
+    confirmButtonText: '確定',
+    cancelButtonText: '取消',
+    inputValidator: (value) => {
+      if (!value) {
+        return '請輸入據點名稱';
+      }
+      const existingLocation = locations.find(loc => (loc.name || loc) === value && (loc.id || loc) !== id);
+      if (existingLocation) {
+        return '此據點名稱已存在';
+      }
+    }
+  });
+  
+  if (newName) {
+    try {
+      await db.collection('locations').doc(id).update({
+        name: newName,
+        updatedAt: new Date()
+      });
+      
+      Swal.fire('成功', '據點名稱已更新', 'success');
+      setTimeout(() => showLocationManageModal(), 1000);
+      
+    } catch (error) {
+      console.error('更新據點失敗:', error);
+      Swal.fire('錯誤', '更新據點失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+async function deleteLocation(id, name) {
+  const result = await Swal.fire({
+    title: '確定刪除？',
+    text: `確定要刪除據點「${name}」嗎？此操作無法復原。`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      // 如果是舊格式的據點（只有名稱），需要用名稱查詢
+      if (id.startsWith('location_')) {
+        const snapshot = await db.collection('locations').where('name', '==', name).get();
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      } else {
+        await db.collection('locations').doc(id).delete();
+      }
+      
+      Swal.fire('已刪除', '據點已成功刪除', 'success');
+      setTimeout(() => showLocationManageModal(), 1000);
+      
+    } catch (error) {
+      console.error('刪除據點失敗:', error);
+      Swal.fire('錯誤', '刪除據點失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 請假管理
+let leaveRequests = [];
+
+function showLeaveModal() {
+  loadLeaveRequests();
+  
+  let html = `
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">📝 請假管理</h2>
+      <button onclick="hideModal('leaveModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    
+    <div class="mb-6">
+      <button onclick="showLeaveForm()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md">
+        新增請假申請
+      </button>
+    </div>
+    
+    <div id="leaveRequestsList" class="space-y-4">
+      <!-- 請假申請列表將在這裡顯示 -->
+    </div>
+    
+    <!-- 請假申請表單 -->
+    <div id="leaveForm" class="hidden mt-6 p-6 bg-gray-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-4">新增請假申請</h3>
+      <form onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+        <input type="hidden" id="leaveId">
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">請假類型</label>
+            <select id="leaveType" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="sick">病假</option>
+              <option value="personal">事假</option>
+              <option value="annual">特休</option>
+              <option value="official">公假</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">申請人</label>
+            <select id="leaveApplicant" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">請選擇申請人</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">開始日期</label>
+            <input type="date" id="leaveStartDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">結束日期</label>
+            <input type="date" id="leaveEndDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">請假事由</label>
+          <textarea id="leaveReason" required rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="hideLeaveForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+            取消
+          </button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+            送出申請
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  document.getElementById('leaveContent').innerHTML = html;
+  showModal('leaveModal');
+  displayLeaveRequests();
+}
+
+async function loadLeaveRequests() {
+  try {
+    const snapshot = await db.collection('leaveRequests').orderBy('createdAt', 'desc').get();
+    leaveRequests = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+  } catch (error) {
+    console.error('載入請假申請失敗:', error);
+    leaveRequests = [];
+  }
+}
+
+function displayLeaveRequests() {
+  const container = document.getElementById('leaveRequestsList');
+  if (!container) return;
+  
+  if (leaveRequests.length === 0) {
+    container.innerHTML = '<div class="text-center text-gray-500 py-8">尚無請假申請</div>';
+    return;
+  }
+  
+  const typeNames = {
+    sick: '病假',
+    personal: '事假', 
+    annual: '特休',
+    official: '公假'
+  };
+  
+  const statusNames = {
+    pending: '待審核',
+    approved: '已核准',
+    rejected: '已拒絕'
+  };
+  
+  const statusColors = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    approved: 'bg-green-100 text-green-800',
+    rejected: 'bg-red-100 text-red-800'
+  };
+  
+  container.innerHTML = leaveRequests.map(leave => {
+    const startDate = leave.startDate || (leave.startTime ? leave.startTime.split('T')[0] : '');
+    const endDate = leave.endDate || (leave.endTime ? leave.endTime.split('T')[0] : '');
+    
+    return `
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 ${leave.status === 'approved' ? 'border-green-500' : leave.status === 'rejected' ? 'border-red-500' : 'border-yellow-500'}">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">${leave.applicant} - ${typeNames[leave.type] || leave.type}</h3>
+          <p class="text-gray-600">${startDate} ~ ${endDate}</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[leave.status] || 'bg-gray-100 text-gray-800'}">
+            ${statusNames[leave.status] || leave.status}
+          </span>
+          <button onclick="deleteLeave('${leave.id}')" class="text-gray-600 hover:text-gray-800 text-sm font-medium">刪除</button>
+        </div>
+      </div>
+      
+      <div class="bg-gray-50 p-3 rounded">
+        <div class="text-sm text-gray-600">請假事由</div>
+        <div class="text-gray-800">${leave.reason}</div>
+      </div>
+      
+      <div class="mt-3 text-xs text-gray-500">
+        申請時間：${leave.createdAt ? (leave.createdAt.toDate ? new Date(leave.createdAt.toDate()).toLocaleString() : new Date(leave.createdAt).toLocaleString()) : '未知'}
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+function showLeaveForm() {
+  const form = document.getElementById('leaveForm');
+  if (form) {
+    form.classList.remove('hidden');
+    
+    // 載入人員選項
+    const applicantSelect = document.getElementById('leaveApplicant');
+    applicantSelect.innerHTML = '<option value="">請選擇申請人</option>';
+    staffList.forEach(staff => {
+      applicantSelect.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+    });
+    
+    // 設定預設日期為今天
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('leaveStartDate').value = today;
+    document.getElementById('leaveEndDate').value = today;
+  }
+}
+
+function hideLeaveForm() {
+  const form = document.getElementById('leaveForm');
+  if (form) {
+    form.classList.add('hidden');
+    form.querySelector('form').reset();
+  }
+}
+
+async function handleLeaveSubmit(event) {
+  event.preventDefault();
+  
+  const type = document.getElementById('leaveType').value;
+  const applicant = document.getElementById('leaveApplicant').value;
+  const startDate = document.getElementById('leaveStartDate').value;
+  const endDate = document.getElementById('leaveEndDate').value;
+  const reason = document.getElementById('leaveReason').value;
+  
+  if (!type || !applicant || !startDate || !endDate || !reason) {
+    Swal.fire('錯誤', '請填寫所有必填欄位', 'error');
+    return;
+  }
+  
+  if (new Date(startDate) > new Date(endDate)) {
+    Swal.fire('錯誤', '結束日期不能早於開始日期', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '處理中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    // 新增請假記錄
+    const leaveData = {
+      type,
+      applicant,
+      startDate,
+      endDate,
+      reason,
+      status: 'approved', // 直接核准，不需審核
+      createdBy: currentUser.uid,
+      createdAt: new Date(),
+      approvedAt: new Date()
+    };
+    
+    await db.collection('leaveRequests').add(leaveData);
+    
+    // 更新班表狀態為休假 - 修正日期處理
+    console.log('更新班表請假狀態 - 開始日期:', startDate, '結束日期:', endDate, '申請人:', applicant);
+    
+    // 修正日期處理 - 直接使用字串日期避免時區問題
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    
+    console.log('處理後的開始日期:', start, '結束日期:', end);
+    
+    // 使用正確的日期迴圈
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      console.log('查詢班表:', dateStr, applicant);
+      
+      // 查詢該日期該人員的班表
+      const scheduleQuery = await db.collection('schedules')
+        .where('date', '==', dateStr)
+        .where('staff', '==', applicant)
+        .get();
+      
+      console.log('找到班表數量:', scheduleQuery.docs.length);
+      
+      // 使用批次更新
+      const batch = db.batch();
+      scheduleQuery.docs.forEach(doc => {
+        console.log('更新班表狀態:', doc.id, doc.data());
+        batch.update(doc.ref, {
+          status: 'leave',
+          leaveType: type,
+          leaveReason: reason,
+          originalStaff: applicant, // 保存原始負責人
+          substituteStaff: null, // 代班人員，初始為空
+          needSubstitute: true, // 標記需要代班
+          updatedBy: currentUser.uid,
+          updatedAt: new Date()
+        });
+      });
+      
+      await batch.commit();
+      
+      // 移到下一天
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    Swal.fire('成功', '請假申請已核准並更新班表，請安排代班人員', 'success');
+    hideLeaveForm();
+    await loadLeaveRequests();
+    displayLeaveRequests();
+    
+    // 如果班表管理頁面已開啟，重新載入班表
+    if (!document.getElementById('scheduleModal').classList.contains('hidden')) {
+      loadSchedule();
+    }
+    
+  } catch (error) {
+    console.error('處理請假申請失敗:', error);
+    Swal.fire('錯誤', '處理請假申請失敗: ' + error.message, 'error');
+  }
+}
+
+async function approveLeave(id) {
+  try {
+    await db.collection('leaveRequests').doc(id).update({
+      status: 'approved',
+      approvedBy: currentUser.uid,
+      approvedAt: new Date()
+    });
+    
+    Swal.fire('成功', '請假申請已核准', 'success');
+    await loadLeaveRequests();
+    displayLeaveRequests();
+    
+  } catch (error) {
+    console.error('核准請假失敗:', error);
+    Swal.fire('錯誤', '核准請假失敗: ' + error.message, 'error');
+  }
+}
+
+async function rejectLeave(id) {
+  const { value: reason } = await Swal.fire({
+    title: '拒絕請假申請',
+    input: 'textarea',
+    inputPlaceholder: '請輸入拒絕原因...',
+    showCancelButton: true,
+    confirmButtonText: '確定拒絕',
+    cancelButtonText: '取消'
+  });
+  
+  if (reason !== undefined) {
+    try {
+      await db.collection('leaveRequests').doc(id).update({
+        status: 'rejected',
+        rejectedBy: currentUser.uid,
+        rejectedAt: new Date(),
+        rejectionReason: reason
+      });
+      
+      Swal.fire('成功', '請假申請已拒絕', 'success');
+      await loadLeaveRequests();
+      displayLeaveRequests();
+      
+    } catch (error) {
+      console.error('拒絕請假失敗:', error);
+      Swal.fire('錯誤', '拒絕請假失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+async function deleteLeave(id) {
+  const result = await Swal.fire({
+    title: '確定刪除？',
+    text: '確定要刪除這個請假申請嗎？此操作無法復原。',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('leaveRequests').doc(id).delete();
+      Swal.fire('已刪除', '請假申請已成功刪除', 'success');
+      await loadLeaveRequests();
+      displayLeaveRequests();
+    } catch (error) {
+      console.error('刪除請假申請失敗:', error);
+      Swal.fire('錯誤', '刪除請假申請失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 班表管理功能
+let schedules = [];
+let currentUserRole = 'staff'; // 預設為員工權限
+
+async function showScheduleModal() {
+  showModal('scheduleModal');
+  const today = new Date();
+  const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('scheduleMonth').value = currentMonth;
+  
+  // 檢查用戶權限
+  await checkUserRole();
+  
+  // 根據權限顯示/隱藏管理員功能
+  const adminButtons = document.querySelectorAll('.admin-only');
+  adminButtons.forEach(btn => {
+    if (currentUserRole === 'admin') {
+      btn.style.display = btn.tagName === 'DIV' ? 'block' : 'inline-block';
+    } else {
+      btn.style.display = 'none';
+    }
+  });
+  
+  loadSchedule();
+}
+
+async function checkUserRole() {
+  try {
+    if (currentUser) {
+      const userDoc = await db.collection('users').where('email', '==', currentUser.email).get();
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        currentUserRole = userData.role || 'staff';
+      }
+    }
+  } catch (error) {
+    console.log('檢查用戶權限失敗:', error);
+  }
+}
+
+async function loadSchedule() {
+  const month = document.getElementById('scheduleMonth').value;
+  if (!month) return;
+  
+  try {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0);
+    
+    const snapshot = await db.collection('schedules')
+      .where('date', '>=', startDate.toISOString().split('T')[0])
+      .where('date', '<=', endDate.toISOString().split('T')[0])
+      .orderBy('date')
+      .get();
+    
+    schedules = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+    displayScheduleCalendar();
+    
+  } catch (error) {
+    console.error('載入班表失敗:', error);
+    Swal.fire('錯誤', '載入班表失敗: ' + error.message, 'error');
+  }
+}
+// 1. 先放縮寫用的 function
+function shortLocation(name) {
+  if (!name) return '';
+  return name[0];
+}
+
+function shortStaff(name) {
+  if (!name) return '';
+  if (/^[a-zA-Z]+$/.test(name)) {
+    return name.slice(0,2);
+  }
+  return name.slice(0,1);
+}
+function displayScheduleCalendar() {
+  const container = document.getElementById('scheduleCalendar');
+  if (!container) return;
+  
+  const month = document.getElementById('scheduleMonth').value;
+  if (!month) return;
+  
+  const [year, monthNum] = month.split('-');
+  const daysInMonth = new Date(year, monthNum, 0).getDate();
+  const firstDay = new Date(year, monthNum - 1, 1).getDay();
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  
+  // 三個據點的顏色配置
+  const locationColors = {
+    '基湖棧': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+    '瑞光棧': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+    '內湖棧': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' }
+  };
+  
+  let html = `
+    <div class="p-4">
+      <!-- 據點圖例 -->
+      <div class="flex justify-center space-x-4 mb-4 p-3 bg-gray-50 rounded-lg text-xs">
+        ${Object.entries(locationColors).map(([location, colors]) => `
+          <div class="flex items-center space-x-1">
+            <div class="w-3 h-3 ${colors.bg} ${colors.border} border rounded"></div>
+            <span class="font-medium">${location}</span>
+          </div>
+        `).join('')}
+        <div class="flex items-center space-x-1">
+          <div class="w-3 h-3 bg-red-100 border-red-200 border rounded"></div>
+          <span class="font-medium">請假</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <div class="w-3 h-3 bg-orange-100 border-orange-200 border rounded"></div>
+          <span class="font-medium">代班</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <div class="w-3 h-3 bg-red-200 border-red-300 border rounded animate-pulse"></div>
+          <span class="font-medium">需安排代班</span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-7 gap-2 mb-4">
+        ${weekdays.map(day => `<div class="text-center font-semibold text-gray-600 py-2">${day}</div>`).join('')}
+      </div>
+      <div class="grid grid-cols-7 gap-2">
+  `;
+  
+  // 填充月初空白
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="h-32 bg-gray-50 rounded"></div>';
+  }
+  
+  // 填充每一天
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, parseInt(monthNum) - 1, day);
+    const dateStr = date.toISOString().split('T')[0];
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const daySchedules = schedules.filter(s => s.date === dateStr);
+    
+    // 按據點分組班表
+    const schedulesByLocation = {};
+    ['基湖棧', '瑞光棧', '內湖棧'].forEach(loc => {
+      schedulesByLocation[loc] = daySchedules.filter(s => s.location === loc);
+    });
+    
+    const bgColor = isWeekend ? 'bg-gray-100' : 'bg-white';
+    const borderColor = isWeekend ? 'border-gray-200' : 'border-gray-200';
+    
+    html += `
+      <div class="h-44 md:h-40 ${bgColor} border ${borderColor} rounded p-1 md:p-2 ${!isWeekend && currentUserRole === 'admin' ? 'cursor-pointer hover:bg-blue-50' : ''}" 
+           ${!isWeekend && currentUserRole === 'admin' ? `onclick="quickEditSchedule('${dateStr}')"` : ''}>
+        <div class="text-sm font-semibold ${isWeekend ? 'text-gray-400' : 'text-gray-700'} mb-2">${day}</div>
+        ${!isWeekend ? `
+          <div class="space-y-1">
+            ${['基湖棧', '瑞光棧', '內湖棧'].map(location => {
+              const locationSchedules = schedulesByLocation[location];
+              const colors = locationColors[location];
+              
+              if (locationSchedules.length > 0) {
+                const schedule = locationSchedules[0];
+                const isOnLeave = schedule.status === 'leave';
+                const needSubstitute = schedule.needSubstitute && !schedule.substituteStaff;
+                const hasSubstitute = schedule.substituteStaff;
+                
+                let scheduleItems = [];
+                
+                if (isOnLeave) {
+                  if (hasSubstitute) {
+                    // 代班人員顯示 - 清楚顯示據點和人員名稱
+                    scheduleItems.push(`
+                      <div class="bg-orange-100 border-orange-200 border rounded px-2 py-1 mb-1 relative group">
+                        <div class="text-xs font-bold text-orange-800 truncate" title="${location}">
+                          📍 ${location}
+                        </div>
+                        <div class="text-xs text-orange-700 font-medium truncate" title="${hasSubstitute} (代班)">
+                          👤 ${hasSubstitute} (代)
+                        </div>
+                        ${currentUserRole === 'admin' ? `
+                          <div class="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded shadow-sm p-1 flex space-x-1 text-xs">
+                            <button onclick="changeSubstitute('${schedule.id}', '${dateStr}', '${location}', '${schedule.originalStaff || schedule.staff}', event)" 
+                                    class="text-orange-600 hover:text-orange-800" title="更換代班">
+                              🔄
+                            </button>
+                            <button onclick="removeSubstitute('${schedule.id}', '${dateStr}', '${location}', event)" 
+                                    class="text-red-600 hover:text-red-800" title="取消代班">
+                              ❌
+                            </button>
+                            <button onclick="deleteSchedule('${schedule.id}', event)" 
+                                    class="text-red-600 hover:text-red-800" title="刪除班表">
+                              🗑️
+                            </button>
+                          </div>
+                        ` : ''}
+                      </div>
+                    `);
+                    
+                    // 原負責人顯示（較小字體，半透明）
+                    scheduleItems.push(`
+                      <div class="bg-gray-100 border-gray-200 border rounded px-2 py-1 opacity-60">
+                        <div class="text-xs text-gray-600 truncate" title="${schedule.originalStaff || schedule.staff} (請假)">
+                          😴 ${(schedule.originalStaff || schedule.staff)} (休)
+                        </div>
+                      </div>
+                    `);
+                  } else {
+                    // 需要代班但還沒安排 - 閃爍提醒
+                    scheduleItems.push(`
+  <div class="bg-red-200 border-red-300 border rounded px-2 py-1 animate-pulse ring-2 ring-red-300 relative group"
+       title="${location}－${schedule.originalStaff || schedule.staff} (需代班)">
+    <div class="text-xs font-bold text-red-800">
+      ${shortLocation(location)}
+    </div>
+    <div class="text-xs text-red-700 font-medium">
+      ⚠️ ${shortStaff(schedule.originalStaff || schedule.staff)}(需代班)
+    </div>
+    ...
+  </div>
+                        ${currentUserRole === 'admin' ? `
+                          <div class="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded shadow-sm p-1 flex space-x-1 text-xs">
+                            <button onclick="assignSubstitute('${schedule.id}', '${dateStr}', '${location}', '${schedule.originalStaff || schedule.staff}', event)" 
+                                    class="text-blue-600 hover:text-blue-800 font-bold" title="安排代班">
+                              👤
+                            </button>
+                            <button onclick="deleteSchedule('${schedule.id}', event)" 
+                                    class="text-red-600 hover:text-red-800" title="刪除班表">
+                              🗑️
+                            </button>
+                          </div>
+                        ` : ''}
+                      </div>
+                    `);
+                  }
+                } else {
+                  // 正常上班 - 清楚顯示據點和人員名稱
+                  scheduleItems.push(`
+  <div class="${colors.bg} ${colors.border} border rounded px-2 py-1 relative group"
+       title="${location}－${schedule.staff}">
+    <div class="text-xs font-bold ${colors.text}">
+      ${shortLocation(location)}
+    </div>
+    <div class="text-xs ${colors.text.replace('-800', '-700')} font-medium">
+      ${shortStaff(schedule.staff)}
+    </div>
+ 
+                      ${currentUserRole === 'admin' ? `
+                        <div class="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded shadow-sm p-1 flex space-x-1 text-xs">
+                          <button onclick="editScheduleStatus('${schedule.id}', '${dateStr}', '${location}', event)" 
+                                  class="text-blue-600 hover:text-blue-800" title="編輯班表">
+                            ⚙️
+                          </button>
+                          <button onclick="deleteSchedule('${schedule.id}', event)" 
+                                  class="text-red-600 hover:text-red-800" title="刪除班表">
+                            🗑️
+                          </button>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `);
+                }
+                
+                return scheduleItems.join('');
+              } else {
+                return `
+                 <div class="bg-gray-50 border border-gray-200 rounded px-2 py-1 relative group"
+     title="${location}－未安排">
+  <div class="text-xs font-bold text-gray-500">
+    ${shortLocation(location)}
+  </div>
+  <div class="text-xs text-gray-400">
+    未安排
+  </div>
+  ...
+</div>
+                    ${currentUserRole === 'admin' ? `
+                      <div class="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded shadow-sm p-1 text-xs">
+                        <button onclick="addLocationSchedule('${dateStr}', '${location}', event)" 
+                                class="text-green-600 hover:text-green-800" title="新增班表">
+                          ➕
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }
+            }).join('')}
+          </div>
+        ` : '<div class="text-xs text-gray-400 mt-1 text-center">休息日</div>'}
+      </div>
+    `;
+  }
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+function quickEditSchedule(dateStr) {
+  if (currentUserRole !== 'admin') {
+    Swal.fire('權限不足', '只有管理員可以編輯班表', 'warning');
+    return;
+  }
+  
+  const daySchedules = schedules.filter(s => s.date === dateStr);
+  
+  if (daySchedules.length === 0) {
+    // 新增班表
+    editSchedule(dateStr);
+  } else if (daySchedules.length === 1) {
+    // 編輯現有班表
+    editSchedule(dateStr, daySchedules[0].id);
+  } else {
+    // 多個班表，顯示選擇列表
+    showScheduleList(dateStr, daySchedules);
+  }
+}
+
+function showScheduleList(dateStr, daySchedules) {
+  const html = `
+    <div class="space-y-2">
+      <h3 class="font-semibold mb-3">${dateStr} 班表安排</h3>
+      ${daySchedules.map(schedule => `
+        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+          <div>
+            <span class="font-medium">${schedule.location}</span> - 
+            <span class="text-gray-600">${schedule.staff}</span>
+          </div>
+          <div class="space-x-2">
+            <button onclick="editSchedule('${dateStr}', '${schedule.id}'); Swal.close();" class="text-blue-600 hover:text-blue-800 text-sm">編輯</button>
+            <button onclick="deleteSchedule('${schedule.id}'); Swal.close();" class="text-red-600 hover:text-red-800 text-sm">刪除</button>
+          </div>
+        </div>
+      `).join('')}
+      <div class="pt-3 border-t">
+        <button onclick="editSchedule('${dateStr}'); Swal.close();" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm">
+          新增班表
+        </button>
+      </div>
+    </div>
+  `;
+  
+  Swal.fire({
+    html,
+    showConfirmButton: false,
+    showCancelButton: true,
+    cancelButtonText: '關閉',
+    width: '400px'
+  });
+}
+
+function exportSchedule() {
+  const month = document.getElementById('scheduleMonth').value;
+  if (!month || schedules.length === 0) {
+    Swal.fire('提示', '沒有班表資料可匯出', 'info');
+    return;
+  }
+  
+  const [year, monthNum] = month.split('-');
+  const rows = [
+    ['日期', '星期', '據點', '負責人員']
+  ];
+  
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  
+  schedules.forEach(schedule => {
+    const date = new Date(schedule.date);
+    const weekday = weekdays[date.getDay()];
+    rows.push([schedule.date, weekday, schedule.location, schedule.staff]);
+  });
+  
+  let csv = rows.map(row => row.map(x => `"${(x || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `班表_${year}年${monthNum}月.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+
+function editSchedule(date, scheduleId = null) {
+  showModal('scheduleFormModal');
+  document.getElementById('scheduleDate').value = date;
+  
+  // 載入據點和員工選項
+  const locationSelect = document.getElementById('scheduleLocation');
+  const staffSelect = document.getElementById('scheduleStaff');
+  
+  locationSelect.innerHTML = '<option value="">請選擇據點</option>';
+  locations.forEach(location => {
+    const name = location.name || location;
+    locationSelect.innerHTML += `<option value="${name}">${name}</option>`;
+  });
+  
+  staffSelect.innerHTML = '<option value="">請選擇人員</option>';
+  staffList.forEach(staff => {
+    staffSelect.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+  });
+  
+  // 如果是編輯現有班表，載入現有資料
+  if (scheduleId) {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (schedule) {
+      locationSelect.value = schedule.location;
+      staffSelect.value = schedule.staff;
+    }
+  }
+}
+
+async function handleScheduleSubmit(event) {
+  event.preventDefault();
+  
+  const date = document.getElementById('scheduleDate').value;
+  const location = document.getElementById('scheduleLocation').value;
+  const staff = document.getElementById('scheduleStaff').value;
+  
+  if (!date || !location || !staff) {
+    Swal.fire('錯誤', '請填寫所有必填欄位', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '儲存中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    await db.collection('schedules').add({
+      date,
+      location,
+      staff,
+      createdBy: currentUser.uid,
+      createdAt: new Date()
+    });
+    
+    Swal.fire('成功', '班表已儲存', 'success');
+    hideModal('scheduleFormModal');
+    loadSchedule();
+    
+  } catch (error) {
+    console.error('儲存班表失敗:', error);
+    Swal.fire('錯誤', '儲存班表失敗: ' + error.message, 'error');
+  }
+}
+
+async function deleteSchedule(scheduleId, event = null) {
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  const result = await Swal.fire({
+    title: '確定刪除？',
+    text: '確定要刪除這個班表安排嗎？',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('schedules').doc(scheduleId).delete();
+      Swal.fire('已刪除', '班表安排已成功刪除', 'success');
+      loadSchedule();
+    } catch (error) {
+      console.error('刪除班表失敗:', error);
+      Swal.fire('錯誤', '刪除班表失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 切換班表狀態（上班/休假）
+async function toggleScheduleStatus(scheduleId, date, location, event) {
+  event.stopPropagation();
+  
+  try {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+    
+    const newStatus = schedule.status === 'leave' ? 'work' : 'leave';
+    
+    await db.collection('schedules').doc(scheduleId).update({
+      status: newStatus,
+      updatedBy: currentUser.uid,
+      updatedAt: new Date()
+    });
+    
+    // 重新載入班表
+    loadSchedule();
+    
+  } catch (error) {
+    console.error('切換班表狀態失敗:', error);
+    Swal.fire('錯誤', '切換班表狀態失敗: ' + error.message, 'error');
+  }
+}
+
+// 為特定據點新增班表
+async function addLocationSchedule(date, location, event) {
+  event.stopPropagation();
+  
+  const { value: staff } = await Swal.fire({
+    title: `新增 ${location} 班表`,
+    text: `日期: ${date}`,
+    input: 'select',
+    inputOptions: staffList.reduce((options, staff) => {
+      options[staff.name] = staff.name;
+      return options;
+    }, {}),
+    inputPlaceholder: '請選擇負責人員',
+    showCancelButton: true,
+    confirmButtonText: '確定',
+    cancelButtonText: '取消',
+    inputValidator: (value) => {
+      if (!value) {
+        return '請選擇負責人員';
+      }
+    }
+  });
+  
+  if (staff) {
+    try {
+      await db.collection('schedules').add({
+        date,
+        location,
+        staff,
+        status: 'work',
+        createdBy: currentUser.uid,
+        createdAt: new Date()
+      });
+      
+      loadSchedule();
+      
+    } catch (error) {
+      console.error('新增班表失敗:', error);
+      Swal.fire('錯誤', '新增班表失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 批次管理功能
+function showBatchAddModal() {
+  showModal('batchAddModal');
+  updateBatchSelects();
+  
+  // 預設選擇工作日
+  document.querySelectorAll('.workday-checkbox').forEach(cb => cb.checked = true);
+}
+
+function showBatchEditModal() {
+  showModal('batchEditModal');
+  updateBatchEditSelects();
+}
+
+function showBatchDeleteModal() {
+  showModal('batchDeleteModal');
+  updateBatchDeleteSelects();
+}
+
+function updateBatchSelects() {
+  const locationSelects = document.querySelectorAll('#batchAddPairs .location-select');
+  const staffSelects = document.querySelectorAll('#batchAddPairs .staff-select');
+  
+  locationSelects.forEach(select => {
+    select.innerHTML = '<option value="">請選擇據點</option>';
+    locations.forEach(location => {
+      const name = location.name || location;
+      select.innerHTML += `<option value="${name}">${name}</option>`;
+    });
+  });
+  
+  staffSelects.forEach(select => {
+    select.innerHTML = '<option value="">請選擇人員</option>';
+    staffList.forEach(staff => {
+      select.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+    });
+  });
+}
+
+function updateBatchEditSelects() {
+  const selects = ['batchEditOldLocation', 'batchEditNewLocation', 'batchEditOldStaff', 'batchEditNewStaff'];
+  
+  selects.forEach(selectId => {
+    const select = document.getElementById(selectId);
+    if (selectId.includes('Location')) {
+      if (selectId === 'batchEditOldLocation') {
+        select.innerHTML = '<option value="">請選擇原據點</option>';
+      } else {
+        select.innerHTML = '<option value="">請選擇新據點</option>';
+      }
+      locations.forEach(location => {
+        const name = location.name || location;
+        select.innerHTML += `<option value="${name}">${name}</option>`;
+      });
+    } else {
+      if (selectId === 'batchEditOldStaff') {
+        select.innerHTML = '<option value="">不限制 (所有人員)</option>';
+      } else {
+        select.innerHTML = '<option value="">請選擇新負責人</option>';
+      }
+      staffList.forEach(staff => {
+        select.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+      });
+    }
+  });
+}
+
+function updateBatchDeleteSelects() {
+  const locationSelect = document.getElementById('batchDeleteLocation');
+  const staffSelect = document.getElementById('batchDeleteStaff');
+  
+  locationSelect.innerHTML = '<option value="">所有據點</option>';
+  locations.forEach(location => {
+    const name = location.name || location;
+    locationSelect.innerHTML += `<option value="${name}">${name}</option>`;
+  });
+  
+  staffSelect.innerHTML = '<option value="">所有人員</option>';
+  staffList.forEach(staff => {
+    staffSelect.innerHTML += `<option value="${staff.name}">${staff.name}</option>`;
+  });
+}
+
+function addBatchPair() {
+  const container = document.getElementById('batchAddPairs');
+  const newPair = document.createElement('div');
+  newPair.className = 'flex space-x-2';
+  newPair.innerHTML = `
+    <div class="flex-1">
+      <label class="block text-sm font-medium mb-1">據點</label>
+      <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 location-select" required>
+        <option value="">請選擇據點</option>
+        ${locations.map(location => {
+          const name = location.name || location;
+          return `<option value="${name}">${name}</option>`;
+        }).join('')}
+      </select>
+    </div>
+    <div class="flex-1">
+      <label class="block text-sm font-medium mb-1">負責人員</label>
+      <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 staff-select" required>
+        <option value="">請選擇人員</option>
+        ${staffList.map(staff => `<option value="${staff.name}">${staff.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button type="button" onclick="removeBatchPair(this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md">移除</button>
+    </div>
+  `;
+  container.appendChild(newPair);
+}
+
+function removeBatchPair(button) {
+  button.closest('.flex').remove();
+}
+
+async function handleBatchAdd(event) {
+  event.preventDefault();
+  
+  const startDate = document.getElementById('batchAddStartDate').value;
+  const endDate = document.getElementById('batchAddEndDate').value;
+  const selectedWorkdays = Array.from(document.querySelectorAll('.workday-checkbox:checked')).map(cb => parseInt(cb.value));
+  const pairs = document.querySelectorAll('#batchAddPairs .flex');
+  
+  if (!startDate || !endDate || selectedWorkdays.length === 0 || pairs.length === 0) {
+    Swal.fire('錯誤', '請填寫所有必填欄位', 'error');
+    return;
+  }
+  
+  const locationStaffPairs = [];
+  let isValid = true;
+  
+  pairs.forEach(pair => {
+    const location = pair.querySelector('.location-select').value;
+    const staff = pair.querySelector('.staff-select').value;
+    
+    if (!location || !staff) {
+      isValid = false;
+      return;
+    }
+    
+    locationStaffPairs.push({ location, staff });
+  });
+  
+  if (!isValid) {
+    Swal.fire('錯誤', '請完整填寫所有據點和人員配對', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '批次新增中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    const batch = db.batch();
+    
+    console.log('批次新增班表 - 開始日期:', startDate, '結束日期:', endDate);
+    console.log('選定工作日:', selectedWorkdays);
+    
+    // 修正日期處理 - 直接使用字串日期避免時區問題
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    
+    console.log('處理後的開始日期:', start, '結束日期:', end);
+    
+    // 使用正確的日期迴圈
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      const dayOfWeek = currentDate.getDay(); // 0=週日, 1=週一, 2=週二, ..., 6=週六
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      console.log('檢查日期:', dateStr, '星期:', dayOfWeek, '(0=日,1=一,2=二,3=三,4=四,5=五,6=六)');
+      
+      // 檢查是否為選定的工作日
+      if (selectedWorkdays.includes(dayOfWeek)) {
+        console.log('符合工作日，新增班表:', dateStr);
+        
+        locationStaffPairs.forEach(pair => {
+          const docRef = db.collection('schedules').doc();
+          batch.set(docRef, {
+            date: dateStr,
+            location: pair.location,
+            staff: pair.staff,
+            status: 'work',
+            createdBy: currentUser.uid,
+            createdAt: new Date()
+          });
+          console.log('新增班表:', dateStr, pair.location, pair.staff);
+        });
+      } else {
+        console.log('不符合工作日，跳過:', dateStr);
+      }
+      
+      // 移到下一天
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    await batch.commit();
+    
+    Swal.fire('成功', '批次新增班表完成', 'success');
+    hideModal('batchAddModal');
+    loadSchedule();
+    
+  } catch (error) {
+    console.error('批次新增班表失敗:', error);
+    Swal.fire('錯誤', '批次新增班表失敗: ' + error.message, 'error');
+  }
+}
+
+async function handleBatchEdit(event) {
+  event.preventDefault();
+  
+  const startDate = document.getElementById('batchEditStartDate').value;
+  const endDate = document.getElementById('batchEditEndDate').value;
+  const oldLocation = document.getElementById('batchEditOldLocation').value;
+  const newLocation = document.getElementById('batchEditNewLocation').value;
+  const oldStaff = document.getElementById('batchEditOldStaff').value;
+  const newStaff = document.getElementById('batchEditNewStaff').value;
+  
+  if (!startDate || !endDate || !oldLocation || !newLocation || !newStaff) {
+    Swal.fire('錯誤', '請填寫所有必填欄位', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '批次調整中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    // 查詢符合條件的班表
+    let query = db.collection('schedules')
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .where('location', '==', oldLocation);
+    
+    const snapshot = await query.get();
+    const batch = db.batch();
+    let updateCount = 0;
+    
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      
+      // 如果指定了原負責人，則只更新該負責人的班表
+      if (!oldStaff || data.staff === oldStaff) {
+        batch.update(doc.ref, {
+          location: newLocation,
+          staff: newStaff,
+          updatedBy: currentUser.uid,
+          updatedAt: new Date()
+        });
+        updateCount++;
+      }
+    });
+    
+    if (updateCount === 0) {
+      Swal.fire('提示', '沒有找到符合條件的班表', 'info');
+      return;
+    }
+    
+    await batch.commit();
+    
+    Swal.fire('成功', `已調整 ${updateCount} 筆班表`, 'success');
+    hideModal('batchEditModal');
+    loadSchedule();
+    
+  } catch (error) {
+    console.error('批次調整班表失敗:', error);
+    Swal.fire('錯誤', '批次調整班表失敗: ' + error.message, 'error');
+  }
+}
+
+async function handleBatchDelete(event) {
+  event.preventDefault();
+  
+  const startDate = document.getElementById('batchDeleteStartDate').value;
+  const endDate = document.getElementById('batchDeleteEndDate').value;
+  const location = document.getElementById('batchDeleteLocation').value;
+  const staff = document.getElementById('batchDeleteStaff').value;
+  
+  if (!startDate || !endDate) {
+    Swal.fire('錯誤', '請選擇日期範圍', 'error');
+    return;
+  }
+  
+  const result = await Swal.fire({
+    title: '確定批次刪除？',
+    text: '此操作將永久刪除選定範圍內的班表，無法復原！',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  });
+  
+  if (!result.isConfirmed) return;
+  
+  try {
+    Swal.fire({
+      title: '批次刪除中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    // 建立查詢條件
+    let query = db.collection('schedules')
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate);
+    
+    const snapshot = await query.get();
+    const batch = db.batch();
+    let deleteCount = 0;
+    
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      let shouldDelete = true;
+      
+      // 檢查據點條件
+      if (location && data.location !== location) {
+        shouldDelete = false;
+      }
+      
+      // 檢查人員條件
+      if (staff && data.staff !== staff) {
+        shouldDelete = false;
+      }
+      
+      if (shouldDelete) {
+        batch.delete(doc.ref);
+        deleteCount++;
+      }
+    });
+    
+    if (deleteCount === 0) {
+      Swal.fire('提示', '沒有找到符合條件的班表', 'info');
+      return;
+    }
+    
+    await batch.commit();
+    
+    Swal.fire('成功', `已刪除 ${deleteCount} 筆班表`, 'success');
+    hideModal('batchDeleteModal');
+    loadSchedule();
+    
+  } catch (error) {
+    console.error('批次刪除班表失敗:', error);
+    Swal.fire('錯誤', '批次刪除班表失敗: ' + error.message, 'error');
+  }
+}
+
+// 安排代班人員
+async function assignSubstitute(scheduleId, date, location, originalStaff, event) {
+  event.stopPropagation();
+  
+  console.log('安排代班 - 班表ID:', scheduleId, '日期:', date, '據點:', location, '原負責人:', originalStaff);
+  
+  // 獲取該日期所有已安排的人員，避免重複安排
+  const daySchedules = schedules.filter(s => s.date === date);
+  const busyStaff = daySchedules.map(s => s.staff).concat(daySchedules.map(s => s.substituteStaff)).filter(Boolean);
+  
+  console.log('該日期已安排人員:', busyStaff);
+  
+  // 建立可用人員選項（排除請假人員和已安排的人員）
+  const availableStaff = staffList.filter(staff => 
+    staff.name !== originalStaff && !busyStaff.includes(staff.name)
+  );
+  
+  if (availableStaff.length === 0) {
+    Swal.fire('提示', '該日期沒有可用的代班人員', 'warning');
+    return;
+  }
+  
+  const staffOptions = availableStaff.reduce((options, staff) => {
+    options[staff.name] = staff.name;
+    return options;
+  }, {});
+  
+  const { value: substituteStaff } = await Swal.fire({
+    title: '安排代班人員',
+    html: `
+      <div class="text-left space-y-3 mb-4">
+        <div><strong>日期:</strong> ${date}</div>
+        <div><strong>據點:</strong> ${location}</div>
+        <div><strong>請假人員:</strong> ${originalStaff}</div>
+        <div class="text-sm text-gray-600">可選擇 ${availableStaff.length} 位可用人員</div>
+      </div>
+    `,
+    input: 'select',
+    inputOptions: staffOptions,
+    inputPlaceholder: '請選擇代班人員',
+    showCancelButton: true,
+    confirmButtonText: '確定安排',
+    cancelButtonText: '取消',
+    inputValidator: (value) => {
+      if (!value) {
+        return '請選擇代班人員';
+      }
+    }
+  });
+  
+  if (substituteStaff) {
+    try {
+      Swal.fire({
+        title: '安排中...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+      
+      console.log('更新班表 - 代班人員:', substituteStaff);
+      
+      await db.collection('schedules').doc(scheduleId).update({
+        substituteStaff: substituteStaff,
+        needSubstitute: false,
+        status: 'leave', // 保持請假狀態，但有代班人員
+        updatedBy: currentUser.uid,
+        updatedAt: new Date()
+      });
+      
+      Swal.fire('成功', `已安排 ${substituteStaff} 代班`, 'success');
+      loadSchedule();
+      
+    } catch (error) {
+      console.error('安排代班失敗:', error);
+      Swal.fire('錯誤', '安排代班失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 更換代班人員
+async function changeSubstitute(scheduleId, date, location, originalStaff, event) {
+  event.stopPropagation();
+  
+  console.log('更換代班 - 班表ID:', scheduleId, '日期:', date, '據點:', location, '原負責人:', originalStaff);
+  
+  // 獲取該日期所有已安排的人員，避免重複安排
+  const daySchedules = schedules.filter(s => s.date === date);
+  const currentSchedule = schedules.find(s => s.id === scheduleId);
+  const busyStaff = daySchedules
+    .filter(s => s.id !== scheduleId) // 排除當前班表
+    .map(s => s.staff)
+    .concat(daySchedules.filter(s => s.id !== scheduleId).map(s => s.substituteStaff))
+    .filter(Boolean);
+  
+  console.log('該日期其他已安排人員:', busyStaff);
+  
+  // 建立可用人員選項（排除請假人員和已安排的人員）
+  const availableStaff = staffList.filter(staff => 
+    staff.name !== originalStaff && !busyStaff.includes(staff.name)
+  );
+  
+  if (availableStaff.length === 0) {
+    Swal.fire('提示', '該日期沒有其他可用的代班人員', 'warning');
+    return;
+  }
+  
+  const staffOptions = availableStaff.reduce((options, staff) => {
+    options[staff.name] = staff.name;
+    return options;
+  }, {});
+  
+  const { value: newSubstituteStaff } = await Swal.fire({
+    title: '更換代班人員',
+    html: `
+      <div class="text-left space-y-3 mb-4">
+        <div><strong>日期:</strong> ${date}</div>
+        <div><strong>據點:</strong> ${location}</div>
+        <div><strong>請假人員:</strong> ${originalStaff}</div>
+        <div><strong>目前代班:</strong> ${currentSchedule.substituteStaff}</div>
+        <div class="text-sm text-gray-600">可選擇 ${availableStaff.length} 位可用人員</div>
+      </div>
+    `,
+    input: 'select',
+    inputOptions: staffOptions,
+    inputPlaceholder: '請選擇新的代班人員',
+    showCancelButton: true,
+    confirmButtonText: '確定更換',
+    cancelButtonText: '取消',
+    inputValidator: (value) => {
+      if (!value) {
+        return '請選擇新的代班人員';
+      }
+    }
+  });
+  
+  if (newSubstituteStaff) {
+    try {
+      Swal.fire({
+        title: '更換中...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+      
+      console.log('更新班表 - 新代班人員:', newSubstituteStaff);
+      
+      await db.collection('schedules').doc(scheduleId).update({
+        substituteStaff: newSubstituteStaff,
+        updatedBy: currentUser.uid,
+        updatedAt: new Date()
+      });
+      
+      Swal.fire('成功', `已更換代班人員為 ${newSubstituteStaff}`, 'success');
+      loadSchedule();
+      
+    } catch (error) {
+      console.error('更換代班失敗:', error);
+      Swal.fire('錯誤', '更換代班失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 取消代班安排
+async function removeSubstitute(scheduleId, date, location, event) {
+  event.stopPropagation();
+  
+  const result = await Swal.fire({
+    title: '取消代班安排',
+    html: `
+      <div class="text-left space-y-3 mb-4">
+        <div><strong>日期:</strong> ${date}</div>
+        <div><strong>據點:</strong> ${location}</div>
+        <p class="text-sm text-gray-600">取消後將需要重新安排代班人員</p>
+      </div>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定取消',
+    cancelButtonText: '保留代班'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      Swal.fire({
+        title: '處理中...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+      
+      await db.collection('schedules').doc(scheduleId).update({
+        substituteStaff: null,
+        needSubstitute: true,
+        updatedBy: currentUser.uid,
+        updatedAt: new Date()
+      });
+      
+      Swal.fire('成功', '已取消代班安排', 'success');
+      loadSchedule();
+      
+    } catch (error) {
+      console.error('取消代班失敗:', error);
+      Swal.fire('錯誤', '取消代班失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 編輯班表狀態
+async function editScheduleStatus(scheduleId, date, location, event) {
+  event.stopPropagation();
+  
+  const schedule = schedules.find(s => s.id === scheduleId);
+  if (!schedule) return;
+  
+  const isOnLeave = schedule.status === 'leave';
+  const hasSubstitute = schedule.substituteStaff;
+  
+  let options = {
+    work: '正常上班',
+    leave: '請假'
+  };
+  
+  if (isOnLeave && hasSubstitute) {
+    options.substitute = '代班中';
+  }
+  
+  const { value: action } = await Swal.fire({
+    title: '編輯班表狀態',
+    html: `
+      <div class="text-left space-y-3 mb-4">
+        <div><strong>日期:</strong> ${date}</div>
+        <div><strong>據點:</strong> ${location}</div>
+        <div><strong>負責人:</strong> ${schedule.staff}</div>
+        ${schedule.originalStaff ? `<div><strong>原負責人:</strong> ${schedule.originalStaff}</div>` : ''}
+        ${schedule.substituteStaff ? `<div><strong>代班人員:</strong> ${schedule.substituteStaff}</div>` : ''}
+      </div>
+    `,
+    input: 'select',
+    inputOptions: options,
+    inputValue: schedule.status,
+    showCancelButton: true,
+    confirmButtonText: '確定',
+    cancelButtonText: '取消'
+  });
+  
+  if (action && action !== schedule.status) {
+    try {
+      let updateData = {
+        status: action,
+        updatedBy: currentUser.uid,
+        updatedAt: new Date()
+      };
+      
+      // 如果從請假狀態改為上班，清除請假相關資料
+      if (schedule.status === 'leave' && action === 'work') {
+        updateData.leaveType = null;
+        updateData.leaveReason = null;
+        updateData.originalStaff = null;
+        updateData.substituteStaff = null;
+        updateData.needSubstitute = false;
+      }
+      
+      await db.collection('schedules').doc(scheduleId).update(updateData);
+      
+      Swal.fire('成功', '班表狀態已更新', 'success');
+      loadSchedule();
+      
+    } catch (error) {
+      console.error('更新班表狀態失敗:', error);
+      Swal.fire('錯誤', '更新班表狀態失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 公告管理功能
+function showAnnouncementModal() {
+  showModal('announcementModal');
+}
+
+function displayAnnouncements() {
+  const container = document.getElementById('announcementList');
+  if (!container) return;
+  
+  // 過濾一周內的公告
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  
+  const recentAnnouncements = announcements.filter(announcement => {
+    const createdAt = announcement.createdAt ? 
+      (announcement.createdAt.toDate ? announcement.createdAt.toDate() : new Date(announcement.createdAt)) : 
+      new Date();
+    return createdAt >= oneWeekAgo;
+  });
+  
+  if (recentAnnouncements.length === 0) {
+    container.innerHTML = '<div class="text-center text-gray-500 py-4">暫無最新公告</div>';
+    return;
+  }
+  
+  const typeColors = {
+    important: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
+    adjustment: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
+    sharing: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' }
+  };
+  
+  const typeNames = {
+    important: '🚨 重要公告',
+    adjustment: '⚙️ 作業調整',
+    sharing: '😊 分享趣事'
+  };
+  
+  container.innerHTML = recentAnnouncements.map(announcement => {
+    const colors = typeColors[announcement.type] || typeColors.important;
+    const createdAt = announcement.createdAt ? 
+      (announcement.createdAt.toDate ? announcement.createdAt.toDate() : new Date(announcement.createdAt)) : 
+      new Date();
+    
+    return `
+      <div class="bg-white rounded-lg shadow-sm border ${colors.border} p-4">
+        <div class="flex justify-between items-start mb-2">
+          <div class="flex items-center space-x-2">
+            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors.bg} ${colors.text}">
+              ${typeNames[announcement.type] || announcement.type}
+            </span>
+            <span class="text-sm text-gray-500">${createdAt.toLocaleDateString()}</span>
+          </div>
+          <button onclick="deleteAnnouncement('${announcement.id}')" class="text-gray-400 hover:text-red-600 text-sm">
+            🗑️
+          </button>
+        </div>
+        <h4 class="font-semibold text-gray-800 mb-2">${announcement.title}</h4>
+        <p class="text-gray-600 text-sm mb-2">${announcement.content}</p>
+        ${announcement.imageUrl ? `
+          <div class="mt-3">
+            <img src="${announcement.imageUrl}" alt="公告圖片" class="max-w-full h-auto rounded-lg shadow-sm max-h-48 object-cover">
+          </div>
+        ` : ''}
+        <div class="text-xs text-gray-400 mt-2">
+          發布者：${announcement.createdBy || '系統'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function submitAnnouncement(event) {
+  event.preventDefault();
+  
+  const type = document.getElementById('announcementType').value;
+  const title = document.getElementById('announcementTitle').value;
+  const content = document.getElementById('announcementContent').value;
+  const imageFile = document.getElementById('announcementImage').files[0];
+  
+  if (!type || !title || !content) {
+    Swal.fire('錯誤', '請填寫所有必填欄位', 'error');
+    return;
+  }
+  
+  try {
+    Swal.fire({
+      title: '發布中...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+    
+    let imageUrl = null;
+    
+    // 如果有上傳圖片，轉換為 base64
+    if (imageFile) {
+      imageUrl = await convertImageToBase64(imageFile);
+    }
+    
+    const announcementData = {
+      type,
+      title,
+      content,
+      imageUrl,
+      createdBy: currentUser.displayName || currentUser.email,
+      createdAt: new Date()
+    };
+    
+    await db.collection('announcements').add(announcementData);
+    
+    Swal.fire('成功', '公告已發布', 'success');
+    hideModal('announcementModal');
+    
+    // 清空表單
+    document.getElementById('announcementModal').querySelector('form').reset();
+    
+  } catch (error) {
+    console.error('發布公告失敗:', error);
+    Swal.fire('錯誤', '發布公告失敗: ' + error.message, 'error');
+  }
+}
+
+function convertImageToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function deleteAnnouncement(id) {
+  const result = await Swal.fire({
+    title: '確定刪除？',
+    text: '確定要刪除這個公告嗎？',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  });
+  
+  if (result.isConfirmed) {
+    try {
+      await db.collection('announcements').doc(id).delete();
+      Swal.fire('已刪除', '公告已成功刪除', 'success');
+    } catch (error) {
+      console.error('刪除公告失敗:', error);
+      Swal.fire('錯誤', '刪除公告失敗: ' + error.message, 'error');
+    }
+  }
+}
+
+// 資料匯出
+function exportData() {
+  const rows = [
+    ['日期','據點','填寫人','狀況','小計','折扣','實收','備註']
+  ].concat(
+    reports.map(r=>[
+      r.date, r.location, r.staff, r.salesStatus,
+      r.salesTotal, r.totalDiscount, r.finalTotal, r.notes||''
+    ])
+  );
+  
+  let csv = rows.map(row=>row.map(x=>`"${(x||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'reports.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95e79693c58b8440',t:'MTc1MjM5NzIwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
